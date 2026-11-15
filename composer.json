@@ -1,0 +1,20 @@
+{
+    "name": "emmar/sistema_ruta_escolar",
+    "description": "Sistema web para la gestión de una ruta escolar",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "authors": [
+        {
+            "name": "emmanuel-m-r",
+            "email": "emmanuel.marquez.rueda@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "vlucas/phpdotenv": "^5.6"
+    }
+}
