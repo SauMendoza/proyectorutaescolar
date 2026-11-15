@@ -28,7 +28,10 @@ class Connection
 
         // Conexión cifrada (necesaria en Azure Database for MySQL).
         if (!empty($config['ssl'])) {
-            $opciones[PDO::MYSQL_ATTR_SSL_CA] = $config['ssl_ca'];
+            $atributoSsl = class_exists(\Pdo\Mysql::class)
+            ? \Pdo\Mysql::ATTR_SSL_CA
+            : \PDO::MYSQL_ATTR_SSL_CA;
+            $opciones[$atributoSsl] = $config['ssl_ca'];
         }
 
         return new PDO($dsn, $config['user'], $config['password'], $opciones);
