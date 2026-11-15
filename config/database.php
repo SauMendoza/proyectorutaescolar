@@ -7,7 +7,7 @@ $env = static function (string $clave, $defecto = null) {
 };
 
 return [
-    'host'     => $env('DB_HOST', '127.0.0.1'),
+    'host'     => $env('DB_HOST', 'ruta-server.mysql.database.azure.com'),
     'port'     => $env('DB_PORT', '3306'),
     'name'     => $env('DB_NAME', 'ruta_escolar_v3'),
     'user'     => $env('DB_USER', 'tomy'),
