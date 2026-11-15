@@ -10,8 +10,8 @@ return [
     'host'     => $env('DB_HOST', '127.0.0.1'),
     'port'     => $env('DB_PORT', '3306'),
     'name'     => $env('DB_NAME', 'ruta_escolar_v3'),
-    'user'     => $env('DB_USER', ''),
-    'password' => $env('DB_PASSWORD', ''),
+    'user'     => $env('DB_USER', 'tomy'),
+    'password' => $env('DB_PASSWORD', 'Badbunny2026'),
     'charset'  => 'utf8mb4',
     // Azure Database for MySQL exige SSL: poner DB_SSL=true en las variables de entorno.
     'ssl'      => filter_var($env('DB_SSL', false), FILTER_VALIDATE_BOOLEAN),
