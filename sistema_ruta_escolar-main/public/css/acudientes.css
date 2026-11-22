@@ -1,0 +1,74 @@
+/* Estilos propios del módulo de acudientes (listado y ficha).
+   Lo compartido (panel lateral, tablas, ventana...) está en app.css. */
+
+.filtros .pestanas-linea { padding: 0 8px; }
+
+/* ----- Ficha del acudiente ----- */
+.ficha-acudiente {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr);
+    gap: 16px;
+    align-items: start;
+}
+
+.tabla-nombre { margin: -6px 0 6px; font-size: 14px; }
+
+.a-cargo {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+.estudiante-tarjeta {
+    display: grid;
+    gap: 4px;
+    padding: 14px;
+    background: var(--vidrio-fuerte);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+}
+
+.estudiante-tarjeta > .insignia { justify-self: start; }
+.estudiante-tarjeta a { text-decoration: none; font-size: 17px; }
+.estudiante-tarjeta a:hover { text-decoration: underline; }
+.estudiante-tarjeta .mono { font-size: 13px; }
+
+.parentesco-linea {
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px solid var(--borde-suave);
+}
+
+.catalogo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 14px;
+    padding: 0;
+    list-style: none;
+}
+
+.catalogo li {
+    padding: 5px 14px;
+    border: 1px solid var(--borde);
+    border-radius: 9px;
+}
+
+.catalogo .usado {
+    font-weight: 700;
+    color: var(--verde-bosque);
+    background: var(--marfil);
+    border-color: transparent;
+}
+
+.agregar-parentesco { display: flex; gap: 8px; }
+.agregar-parentesco .buscador { flex: 1; border-style: dashed; }
+
+.panel-oscuro { background: rgba(0, 0, 0, 0.18); }
+
+.tabla-codigo { min-width: 420px; font-family: var(--mono); font-size: 14px; }
+.tabla-codigo th { font-family: var(--mono); letter-spacing: 0; text-transform: none; background: none; }
+
+@media (max-width: 1150px) {
+    .ficha-acudiente { grid-template-columns: minmax(0, 1fr); }
+}

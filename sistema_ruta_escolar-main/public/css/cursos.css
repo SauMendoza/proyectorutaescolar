@@ -1,0 +1,143 @@
+/* Estilos propios del módulo de cursos.
+   Lo compartido (panel lateral, ventana, recorrido...) está en app.css. */
+
+.cursos {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+
+/* ----- Lista de cursos ----- */
+.lista-cursos { padding: 12px; }
+
+.lista-titulo {
+    display: flex;
+    justify-content: space-between;
+    margin: 0 0 6px;
+    padding: 6px 10px 10px;
+    color: var(--texto-60);
+    border-bottom: 1px solid var(--borde);
+}
+
+.lista-cursos ul { margin: 0; padding: 0; list-style: none; }
+
+.lista-cursos a {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    text-decoration: none;
+    border-radius: 9px;
+}
+
+.lista-cursos a .mono { color: var(--texto-45); }
+.lista-cursos a span:last-child { color: var(--texto-60); }
+.lista-cursos a:hover { background: var(--vidrio-fuerte); }
+
+.lista-cursos a.activo {
+    color: var(--amarillo);
+    background: rgba(244, 210, 31, 0.1);
+    box-shadow: inset 3px 0 0 var(--amarillo);
+}
+
+.lista-cursos a.activo span { color: var(--amarillo); }
+
+/* ----- Detalle del curso ----- */
+.detalle-curso { display: grid; gap: 8px; }
+
+.detalle-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+
+.estudiante-curso {
+    border-bottom: 1px solid var(--borde-suave);
+}
+
+.estudiante-curso[open] {
+    padding-bottom: 14px;
+    background: var(--vidrio-fuerte);
+    border: 1px solid rgba(244, 210, 31, 0.55);
+    border-radius: 14px;
+}
+
+.estudiante-curso summary {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    list-style: none;
+    cursor: pointer;
+}
+
+.estudiante-curso summary::-webkit-details-marker { display: none; }
+
+.estudiante-curso summary::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    margin: 0 4px 4px;
+    border-right: 2px solid var(--texto-75);
+    border-bottom: 2px solid var(--texto-75);
+    transform: rotate(45deg);
+}
+
+.estudiante-curso[open] summary::after { margin-bottom: -4px; transform: rotate(-135deg); }
+
+.avatar {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border: 1.5px solid var(--borde);
+    border-radius: 50%;
+}
+
+.estudiante-curso[open] .avatar { border-color: var(--amarillo); color: var(--amarillo); }
+
+.avatar svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+}
+
+.nombre { display: grid; flex: 1; min-width: 0; }
+.nombre small { color: var(--texto-60); }
+
+.estudiante-cuerpo { padding: 0 14px 0 64px; }
+
+.datos-iconos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 20px;
+    margin: 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--borde-suave);
+}
+
+.datos-iconos dt { color: var(--texto-60); }
+.datos-iconos dd { margin: 0; font-weight: 700; }
+.datos-iconos a { display: block; font-weight: 400; text-decoration: none; }
+
+.ficha-enlace { display: inline-block; margin-top: 12px; }
+
+.ventana-chica { width: min(460px, calc(100vw - 32px)); }
+
+@media (max-width: 1000px) {
+    .cursos { grid-template-columns: minmax(0, 1fr); }
+    .lista-cursos ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+}
+
+@media (max-width: 820px) {
+    .estudiante-cuerpo { padding-left: 14px; }
+    .datos-iconos { grid-template-columns: minmax(0, 1fr); }
+}

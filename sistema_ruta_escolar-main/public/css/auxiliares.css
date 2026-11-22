@@ -1,0 +1,178 @@
+/* Estilos del módulo Auxiliares (lista de cuentas y formulario "Nuevo auxiliar").
+   Lo compartido (panel lateral, campos, botones...) está en app.css. */
+
+.auxiliares {
+    display: grid;
+    grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.6fr);
+    gap: 16px;
+    align-items: start;
+}
+
+/* ----- Lista ----- */
+.lista-auxiliares { display: grid; gap: 12px; }
+
+.tarjeta-auxiliar { display: grid; gap: 12px; padding: 16px 18px; }
+
+.auxiliar-cabecera { display: flex; align-items: center; gap: 12px; }
+.auxiliar-cabecera > div { display: grid; min-width: 0; }
+.auxiliar-cabecera .texto-suave { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.inicial-azul { color: var(--verde-bosque); background: var(--azul-claro); }
+
+.auxiliar-pie {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 12px;
+    margin: 0;
+    padding-top: 10px;
+    border-top: 1px solid var(--borde);
+}
+
+.nota-candado {
+    display: flex;
+    gap: 12px;
+    margin: 0;
+    padding: 14px 16px;
+    color: var(--texto-85);
+    background: rgba(31, 58, 140, 0.25);
+    border: 1px solid rgba(157, 180, 255, 0.25);
+    border-left: 3px solid var(--azul);
+    border-radius: 12px;
+}
+
+.nota-candado .icono { margin-top: 2px; }
+
+/* ----- Formulario ----- */
+.formulario-auxiliar .etiqueta-seccion {
+    margin: 18px 0 10px;
+    padding-top: 16px;
+    color: var(--texto-60);
+    border-top: 1px solid var(--borde);
+}
+
+/* Campo con ícono a la izquierda y texto o botón a la derecha */
+.entrada-icono {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 0 12px;
+    background: var(--vidrio-fuerte);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+}
+
+.entrada-icono:focus-within { border-color: var(--amarillo); }
+
+.campos .entrada-icono input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 0;
+    background: transparent;
+    border: 0;
+}
+
+.campos .entrada-icono input:focus { outline: none; }
+
+#caja-correo { margin-top: -8px; }
+#caja-correo.libre { border-color: var(--amarillo); }
+#caja-correo.ocupado { border-color: var(--error); }
+
+.estado-correo { flex: none; font-weight: 700; }
+.libre .estado-correo { color: #7ED69A; }
+.ocupado .estado-correo { color: var(--error); }
+
+.fila-contrasena {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    margin-top: -8px;
+}
+
+.boton-texto {
+    flex: none;
+    padding: 4px 2px;
+    font: inherit;
+    font-weight: 700;
+    color: var(--amarillo);
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+/* Barras de seguridad de la contraseña */
+.fuerza { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: -4px; }
+.fuerza i { height: 4px; background: var(--hundido); border-radius: 2px; }
+.fuerza[data-nivel="1"] i:nth-child(-n+1) { background: var(--llama); }
+.fuerza[data-nivel="2"] i:nth-child(-n+2) { background: var(--amarillo); }
+.fuerza[data-nivel="3"] i:nth-child(-n+3),
+.fuerza[data-nivel="4"] i { background: #7ED69A; }
+
+.fuerza-texto { margin: -8px 0 0; font-size: 14px; }
+
+/* Casilla "Pedir cambio de contraseña" */
+.campos .casilla {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.campos .casilla input {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--amarillo);
+}
+
+/* Ruta asignada: interruptor con radios */
+.ruta-asignada {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    margin: 18px 0 0;
+    padding: 0;
+    border: 0;
+}
+
+.ruta-asignada legend { float: left; margin-right: 4px; color: var(--marfil); }
+
+.ruta-asignada label { display: block; font-weight: 400; }
+
+.ruta-asignada input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.ruta-asignada span {
+    display: block;
+    padding: 6px 16px;
+    border-radius: 9px;
+    cursor: pointer;
+}
+
+.ruta-asignada input:checked + span {
+    font-weight: 700;
+    color: var(--verde-bosque);
+    background: var(--amarillo);
+}
+
+.ruta-asignada input:focus-visible + span { outline: 2px solid var(--marfil); }
+
+/* ----- Pantallas medianas y celular ----- */
+@media (max-width: 1100px) {
+    .auxiliares { grid-template-columns: minmax(0, 1fr); }
+    .lista-auxiliares { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+    .nota-candado { grid-column: 1 / -1; }
+}
+
+@media (max-width: 820px) {
+    .fila-contrasena { grid-template-columns: minmax(0, 1fr); }
+    .ruta-asignada legend { float: none; width: 100%; }
+}

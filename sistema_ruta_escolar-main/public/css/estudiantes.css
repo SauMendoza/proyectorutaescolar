@@ -1,0 +1,418 @@
+/* Estilos propios del módulo de estudiantes (listado, nuevo estudiante y ficha).
+   Lo compartido (panel lateral, tablas, botones...) está en app.css. */
+
+/* ----- Listado: estadísticas ----- */
+.estadisticas {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.hoy { width: 130px; }
+
+/* ----- Nuevo estudiante: indicador de pasos ----- */
+.pasos {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    margin: 0 0 14px;
+    padding: 5px;
+    list-style: none;
+    background: var(--hundido);
+    border-radius: 12px;
+}
+
+.pasos button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 12px;
+    font: inherit;
+    text-align: left;
+    color: var(--texto-75);
+    background: transparent;
+    border: 0;
+    border-radius: 9px;
+    cursor: pointer;
+}
+
+.pasos button:disabled { cursor: default; opacity: 0.6; }
+
+.pasos .numero {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 24px;
+    height: 24px;
+    font-size: 13px;
+    font-weight: 700;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+}
+
+.pasos .hecho button { color: var(--marfil); }
+
+.pasos .hecho .numero {
+    font-size: 0;
+    border-color: var(--verde-escudo);
+    background: var(--verde-escudo) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12 4 4 8-8'/%3E%3C/svg%3E") center / 16px no-repeat;
+}
+
+.pasos .activo button {
+    font-weight: 700;
+    color: var(--verde-bosque);
+    background: var(--marfil);
+    box-shadow: inset 0 -2px 0 var(--verde-escudo);
+}
+
+.pasos .activo .numero {
+    color: var(--marfil);
+    background: var(--verde-bosque);
+    border-color: var(--verde-bosque);
+}
+
+/* Sin JavaScript no se usa el indicador: el formulario sale completo */
+html:not(.js) .pasos { display: none; }
+
+/* ----- Nuevo estudiante: formulario y resumen ----- */
+.registro {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 16px;
+    align-items: start;
+}
+
+.panel-form,
+.resumen {
+    padding: 20px;
+    background: var(--vidrio);
+    border: 1px solid var(--borde);
+    border-radius: 16px;
+}
+
+.js .paso:not(.activo) { display: none; }
+
+html:not(.js) .paso + .paso {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--borde);
+}
+
+.acudiente { display: grid; gap: 14px; }
+
+.buscar-acudiente {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 5px 0 12px;
+    background: var(--vidrio-fuerte);
+    border: 1px solid var(--amarillo);
+    border-radius: 10px;
+}
+
+.buscar-acudiente svg,
+.nota svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    color: var(--texto-75);
+}
+
+.buscar-acudiente input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 0;
+    font: inherit;
+    color: var(--marfil);
+    background: transparent;
+    border: 0;
+    outline: none;
+}
+
+.buscar-acudiente .boton { padding: 6px 14px; }
+
+.encontrado {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    background: rgba(244, 210, 31, 0.1);
+    border: 1px solid rgba(244, 210, 31, 0.45);
+    border-radius: 12px;
+}
+
+.encontrado > div { display: grid; flex: 1; }
+.encontrado small { color: var(--texto-75); }
+
+.parentescos { margin: 0; padding: 0; border: 0; }
+
+.parentescos .opciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+    padding: 6px;
+    background: var(--hundido);
+    border-radius: 10px;
+}
+
+.parentescos label { display: block; font-weight: 400; }
+
+.parentescos input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.parentescos span {
+    display: block;
+    padding: 5px 14px;
+    color: var(--marfil);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.parentescos span:hover { background: var(--vidrio-fuerte); }
+
+.parentescos input:checked + span {
+    font-weight: 700;
+    color: var(--verde-bosque);
+    background: var(--marfil);
+    box-shadow: inset 0 -2px 0 var(--verde-escudo);
+}
+
+.parentescos input:focus-visible + span { outline: 2px solid var(--amarillo); }
+
+.nota-alerta {
+    margin: 0;
+    padding: 10px 14px;
+    background: var(--hundido);
+    border-radius: 10px;
+}
+
+.nota-alerta svg { margin-top: 2px; color: var(--llama); }
+
+.error-paso {
+    margin: 16px 0 0;
+    padding: 10px 14px;
+    color: var(--marfil);
+    background: rgba(232, 76, 43, 0.12);
+    border: 1px solid rgba(232, 76, 43, 0.55);
+    border-radius: 10px;
+}
+
+.acciones {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.acciones [data-accion="siguiente"],
+.acciones [data-accion="guardar"] { margin-left: auto; }
+
+/* Sin JavaScript solo se ve el botón de guardar */
+html:not(.js) .acciones [data-accion="atras"],
+html:not(.js) .acciones [data-accion="siguiente"] { display: none; }
+
+.resumen { position: sticky; top: 24px; }
+
+.resumen .datos { margin-top: 10px; }
+
+.resumen .resumen-estudiante { display: grid; gap: 2px; }
+.resumen .resumen-estudiante dd { text-align: left; }
+
+/* ----- Ficha del estudiante ----- */
+.ficha {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+
+.ficha > div { display: grid; gap: 16px; }
+
+.ruta-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.ruta-cabecera strong { font-size: 20px; }
+
+.acudientes-ficha {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.acudiente-tarjeta {
+    display: grid;
+    gap: 6px;
+    padding: 14px;
+    background: var(--vidrio-fuerte);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+}
+
+.acudiente-tarjeta strong { font-size: 17px; }
+.acudiente-tarjeta > .insignia { justify-self: start; }
+.acudiente-tarjeta a { text-decoration: none; }
+
+.acudiente-tarjeta .telefono {
+    font-family: var(--mono);
+    color: var(--amarillo);
+    text-decoration: none;
+}
+
+.acudiente-tarjeta .vacio { color: var(--texto-60); }
+
+.calendario {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+    text-align: center;
+}
+
+.calendario .dia-semana {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--texto-60);
+}
+
+.calendario .dia {
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    padding: 6px 0;
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--hundido);
+    border-radius: 8px;
+}
+
+.calendario .dia.hoy-dia { outline: 1px solid var(--amarillo); }
+.calendario .dia.futuro { opacity: 0.4; }
+
+.puntos { display: flex; gap: 4px; min-height: 8px; }
+
+.puntos i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid rgba(251, 251, 244, 0.3);
+}
+
+.puntos .p-ida { background: var(--amarillo); border-color: var(--amarillo); }
+.puntos .p-regreso { background: var(--azul-claro); border-color: var(--azul-claro); }
+
+.leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--texto-75);
+}
+
+.leyenda span { display: inline-flex; align-items: center; gap: 6px; }
+
+.mini-estadisticas {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.mini-estadisticas .tarjeta strong { font-size: 22px; }
+
+.registros { margin: 0; padding: 0; list-style: none; }
+
+.registros li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--borde-suave);
+}
+
+.registros li:last-child { border-bottom: 0; }
+.registros li > div { flex: 1; min-width: 0; }
+.registros small { display: block; color: var(--texto-60); }
+
+/* ----- Pantallas medianas ----- */
+@media (max-width: 1150px) {
+    .estadisticas { grid-template-columns: repeat(2, 1fr); }
+    .registro,
+    .ficha { grid-template-columns: minmax(0, 1fr); }
+    .resumen { position: static; }
+}
+
+/* ----- Celular ----- */
+@media (max-width: 820px) {
+    .pasos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .acudientes-ficha { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ----- Carné con código QR (ficha) ----- */
+.carne-cuerpo { display: flex; align-items: center; gap: 18px; }
+
+.carne-qr {
+    flex: none;
+    width: 132px;
+    padding: 8px;
+    background: #FFFFFF;
+    border-radius: 12px;
+}
+
+.carne-qr svg { display: block; width: 100%; height: auto; }
+
+.carne-datos { display: grid; gap: 2px; min-width: 0; color: var(--texto-75); }
+.carne-datos strong { font-size: 18px; color: var(--marfil); }
+.carne-colegio { font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--amarillo); text-transform: uppercase; }
+
+.carne-ayuda { margin: 14px 0 10px; }
+
+@media (max-width: 420px) {
+    .carne-cuerpo { flex-direction: column; align-items: flex-start; }
+}
+
+/* Al imprimir con "Imprimir carné" solo sale la tarjeta, en blanco y negro */
+@media print {
+    body.imprimiendo-carne { background: #FFFFFF; }
+    body.imprimiendo-carne * { visibility: hidden; }
+    body.imprimiendo-carne #carne,
+    body.imprimiendo-carne #carne * { visibility: visible; color: #000000; }
+
+    body.imprimiendo-carne #carne {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 8.6cm;
+        padding: 0.4cm;
+        background: #FFFFFF;
+        border: 1px solid #000000;
+        border-radius: 0.3cm;
+    }
+
+    body.imprimiendo-carne #carne > .etiqueta,
+    body.imprimiendo-carne .carne-ayuda,
+    body.imprimiendo-carne .carne-imprimir { display: none; }
+
+    body.imprimiendo-carne .carne-cuerpo { gap: 0.3cm; }
+    body.imprimiendo-carne .carne-qr { width: 3cm; padding: 0; }
+    body.imprimiendo-carne .carne-datos { font-size: 9pt; }
+    body.imprimiendo-carne .carne-datos strong { font-size: 11pt; }
+}

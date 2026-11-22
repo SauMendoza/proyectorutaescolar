@@ -1,0 +1,205 @@
+/* Estilos del Panel de inicio (administrador y auxiliar).
+   Lo compartido (panel lateral, tarjetas, botones...) está en app.css. */
+
+.cifras {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.cifras .tarjeta { padding: 14px 18px; }
+.cifras .tarjeta strong { font-size: 34px; }
+.cifras .tarjeta small { font-size: 26px; font-weight: 400; color: var(--texto-45); }
+
+.panel-medio {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+    align-items: stretch;
+}
+
+/* ----- Tarjeta de cada ruta ----- */
+.tarjeta-ruta { display: grid; gap: 12px; align-content: start; }
+
+.tarjeta-ruta header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.tarjeta-ruta .etiqueta { margin: 0; }
+.tarjeta-ruta h2 { margin: 0; }
+
+.estado {
+    padding: 2px 10px;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    border-radius: 8px;
+}
+
+.estado-ida { color: var(--verde-bosque); background: var(--amarillo); }
+.estado-regreso { color: #0A1F4D; background: var(--azul-claro); }
+.estado-listo { color: var(--marfil); background: var(--verde-escudo); }
+.estado-vacio { font-weight: 400; color: var(--texto-75); border: 1px dashed rgba(251, 251, 244, 0.35); }
+
+.avance p {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0 0 6px;
+}
+
+.barra {
+    display: block;
+    height: 8px;
+    overflow: hidden;
+    background: var(--hundido);
+    border-radius: 4px;
+}
+
+.barra > span { display: block; height: 100%; border-radius: 4px; }
+.barra-ida { background: var(--amarillo); }
+.barra-regreso { background: var(--azul-claro); }
+
+.equipo {
+    margin: 0;
+    padding-top: 12px;
+    color: var(--texto-85);
+    border-top: 1px solid var(--borde-suave);
+}
+
+/* ----- Para atender ----- */
+.atender {
+    background: rgba(232, 76, 43, 0.06);
+    border-color: rgba(232, 76, 43, 0.45);
+}
+
+.etiqueta-alerta { color: var(--error); }
+
+.atender ul { margin: 0; padding: 0; list-style: none; }
+
+.atender li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--borde-suave);
+}
+
+.atender li:last-child { border-bottom: 0; }
+
+.contador {
+    display: grid;
+    place-items: center;
+    flex: none;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    font-weight: 800;
+    color: var(--verde-bosque);
+    background: var(--amarillo);
+    border-radius: 7px;
+}
+
+.contador-alerta { color: var(--marfil); background: var(--llama); }
+
+.atender-texto { flex: 1; min-width: 0; }
+
+.atender small { display: block; color: var(--texto-60); }
+
+.llamar-chico {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 34px;
+    height: 34px;
+    color: var(--verde-bosque);
+    background: var(--amarillo);
+    border-radius: 50%;
+}
+
+.llamar-chico svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+
+/* ----- Gráfico de la semana ----- */
+.semana header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.semana .etiqueta { margin: 0; }
+
+.leyenda-semana {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    color: var(--texto-75);
+}
+
+.leyenda-semana i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.cuadro-ida { background: var(--amarillo); }
+.cuadro-regreso { margin-left: 6px; background: var(--azul-claro); }
+
+.grafico {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.grafico li { display: grid; gap: 10px; justify-items: center; }
+
+.barras-dia {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    height: 150px;
+    border-bottom: 2px solid var(--borde);
+    background: repeating-linear-gradient(to top, transparent 0 49px, var(--borde-suave) 49px 50px);
+}
+
+.columna {
+    width: min(64px, 40%);
+    min-height: 2px;
+    border-radius: 6px 6px 0 0;
+}
+
+.columna-ida { background: var(--amarillo); }
+.columna-regreso { background: var(--azul-claro); }
+
+.columna-pendiente {
+    height: 22px;
+    border: 2px dashed var(--azul-claro);
+    border-radius: 6px;
+}
+
+.dia-texto { color: var(--texto-75); white-space: nowrap; }
+.dia-hoy .dia-texto { font-weight: 800; color: var(--marfil); }
+
+/* ----- Pantallas medianas y celular ----- */
+@media (max-width: 1150px) {
+    .cifras { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 820px) {
+    .cifras .tarjeta strong { font-size: 28px; }
+    .barras-dia { height: 110px; }
+    .dia-texto { font-size: 12px; white-space: normal; text-align: center; }
+}

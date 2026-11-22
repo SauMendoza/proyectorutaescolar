@@ -1,0 +1,193 @@
+/* Estilos propios del módulo de rutas (tarjetas y ventana de edición).
+   Lo compartido (panel lateral, ventana, campos...) está en app.css. */
+
+.rutas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 16px;
+    align-items: start;
+}
+
+.ruta-tarjeta { display: grid; gap: 14px; }
+
+.ruta-cabecera {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.ruta-cabecera > div { flex: 1; min-width: 0; }
+.ruta-cabecera h2 { margin: 0; }
+
+.icono-bus {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 46px;
+    height: 46px;
+    color: var(--amarillo);
+    background: rgba(244, 210, 31, 0.12);
+    border-radius: 12px;
+}
+
+.icono-bus svg {
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.personas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.persona {
+    display: grid;
+    gap: 2px;
+    padding: 10px 14px;
+    background: var(--hundido);
+    border: 1px solid transparent;
+    border-radius: 12px;
+}
+
+.persona span { color: var(--texto-60); }
+.persona a { font-size: 13px; color: var(--texto-75); text-decoration: none; }
+
+.persona-alerta { border-color: rgba(232, 76, 43, 0.55); }
+.persona-alerta strong { color: var(--error); }
+
+.etiqueta-gris { margin: 4px 0 0; color: var(--texto-60); }
+
+.paradas {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.paradas li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.numero {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--verde-bosque);
+    background: var(--marfil);
+    border-radius: 50%;
+}
+
+.parada-nombre { flex: 1; min-width: 0; }
+.parada-nombre small { display: block; color: var(--texto-60); font-size: 13px; }
+
+.paradas .colegio { font-weight: 700; color: var(--amarillo); }
+.paradas .colegio .numero { background: var(--amarillo); }
+
+.ruta-pie {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 14px;
+    color: var(--texto-75);
+    border-top: 1px solid var(--borde);
+}
+
+/* ----- Ventana de edición ----- */
+.ventana-ruta { width: min(760px, calc(100vw - 32px)); }
+.ventana-ruta .ventana-cabecera { align-items: center; gap: 14px; }
+.ventana-titulo { flex: 1; min-width: 0; }
+
+.campo-grupo { display: grid; gap: 6px; align-content: start; }
+
+.conductor-nuevo {
+    margin: 0;
+    padding: 14px;
+    border: 1px dashed rgba(244, 210, 31, 0.5);
+    border-radius: 12px;
+}
+
+.conductor-nuevo legend { padding: 0 6px; color: var(--amarillo); }
+
+.titulo-paradas { margin: 18px 0 8px; font-weight: 600; color: var(--texto-85); }
+
+.editar-paradas {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.fila-parada {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1.3fr) minmax(0, 1fr) 70px 52px 28px;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--vidrio-fuerte);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+}
+
+.fila-parada input[type="text"] {
+    width: 100%;
+    min-width: 0;
+    padding: 7px 10px;
+    font: inherit;
+    color: var(--marfil);
+    background: var(--hundido);
+    border: 1px solid transparent;
+    border-radius: 8px;
+}
+
+.fila-parada input[type="text"]:focus { border-color: var(--amarillo); outline: none; }
+.fila-parada .est { font-size: 13px; white-space: nowrap; }
+
+.quitar-parada {
+    padding: 0;
+    font: inherit;
+    font-size: 20px;
+    color: var(--texto-75);
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+.quitar-parada:disabled { opacity: 0.25; cursor: not-allowed; }
+
+.agregar-parada {
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px 14px;
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+    color: var(--amarillo);
+    background: transparent;
+    border: 1px dashed rgba(244, 210, 31, 0.6);
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+@media (max-width: 820px) {
+    .rutas { grid-template-columns: minmax(0, 1fr); }
+    .personas { grid-template-columns: minmax(0, 1fr); }
+
+    .fila-parada { grid-template-columns: 28px minmax(0, 1fr) 70px 28px; }
+    .fila-parada input[name$="[comunidad]"] { grid-column: 2 / 4; grid-row: 2; }
+    .fila-parada .est { grid-column: 4; grid-row: 2; }
+}
