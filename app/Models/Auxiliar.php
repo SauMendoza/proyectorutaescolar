@@ -3,8 +3,9 @@
 namespace App\Models;
 
 use PDO;
-use Throwable;
 
+// Usuarios auxiliares: lista con su ruta y su último ingreso, y registro de cuentas nuevas.
+// La cuenta queda en dos tablas: usuario (datos y contraseña cifrada) y auxiliar (ruta asignada).
 class Auxiliar
 {
     private PDO $conexion;
@@ -14,83 +15,62 @@ class Auxiliar
         $this->conexion = $conexion;
     }
 
-    // Obtener las rutas existentes para mostrarlas en el formulario.
-    public function obtenerRutas(): array
+    // Auxiliares con su ruta (null = sin ruta) y la fecha y hora de su último ingreso (vista vista_auxiliares).
+    public function obtenerTodos(): array
     {
-        $sql = "SELECT id_ruta, nombre
-                FROM ruta
-                ORDER BY nombre ASC";
+        $sql = 'SELECT * FROM vista_auxiliares ORDER BY nombre, apellido';
 
-        $consulta = $this->conexion->query($sql);
-
-        return $consulta->fetchAll(PDO::FETCH_ASSOC);
+        return $this->conexion->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Registrar al usuario y relacionarlo con una ruta.
-    public function registrar(
-        string $nombre,
-        string $apellido,
-        string $correo,
-        string $contrasena,
-        int $idRuta
-    ): bool {
+    // Rutas existentes para elegir la ruta asignada.
+    public function obtenerRutas(): array
+    {
+        $sql = 'SELECT id_ruta, nombre FROM ruta ORDER BY id_ruta';
 
-        try {
-            $this->conexion->beginTransaction();
+        return $this->conexion->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
 
-            // 1. Insertar los datos personales en la tabla usuario.
-            $sqlUsuario = "INSERT INTO usuario
-                           (nombre, apellido, correo, contrasena)
-                           VALUES
-                           (:nombre, :apellido, :correo, :contrasena)";
+    // Indica si un correo ya lo usa otro usuario (administrador o auxiliar).
+    public function existeCorreo(string $correo): bool
+    {
+        $consulta = $this->conexion->prepare('SELECT 1 FROM usuario WHERE correo = :correo');
+        $consulta->execute([':correo' => $correo]);
+        return (bool) $consulta->fetchColumn();
+    }
 
-            $consultaUsuario = $this->conexion->prepare($sqlUsuario);
+    // Indica si un documento ya lo usa otro usuario.
+    public function existeDocumento(string $documento): bool
+    {
+        $consulta = $this->conexion->prepare('SELECT 1 FROM usuario WHERE dni = :dni');
+        $consulta->execute([':dni' => $documento]);
+        return (bool) $consulta->fetchColumn();
+    }
 
-            $consultaUsuario->execute([
-                ':nombre' => $nombre,
-                ':apellido' => $apellido,
-                ':correo' => $correo,
-                ':contrasena' => password_hash(
-                    $contrasena,
-                    PASSWORD_DEFAULT
-                )
-            ]);
+    // Crea la cuenta con el procedimiento sp_crear_auxiliar: en una transacción guarda el usuario
+    // y luego su fila en auxiliar. Si algo falla, no queda nada guardado (y PHP recibe el error).
+    // La contraseña se cifra aquí antes de enviarla.
+    // $datos: nombre, apellido, documento, telefono, fecha_ingreso, correo, contrasena,
+    //         cambiar_contrasena (bool), id_ruta (null = sin ruta)
+    public function registrar(array $datos): int
+    {
+        $consulta = $this->conexion->prepare(
+            'CALL sp_crear_auxiliar(:dni, :nombre, :apellido, :correo, :telefono, :fecha, :contrasena, :cambiar, :ruta)'
+        );
+        $consulta->execute([
+            ':dni' => $datos['documento'],
+            ':nombre' => $datos['nombre'],
+            ':apellido' => $datos['apellido'],
+            ':correo' => $datos['correo'],
+            ':telefono' => $datos['telefono'],
+            ':fecha' => $datos['fecha_ingreso'],
+            ':contrasena' => password_hash($datos['contrasena'], PASSWORD_DEFAULT),
+            ':cambiar' => $datos['cambiar_contrasena'] ? 1 : 0,
+            ':ruta' => $datos['id_ruta'],
+        ]);
 
-            // Obtener el id_usuario generado por MySQL.
-            $idUsuario = (int) $this->conexion->lastInsertId();
-
-            if ($idUsuario <= 0) {
-                throw new \RuntimeException(
-                    'No se pudo obtener el ID del usuario.'
-                );
-            }
-
-            // 2. Insertar la relación en la tabla auxiliar.
-            $sqlAuxiliar = "INSERT INTO auxiliar
-                            (fk_id_usuario, fk_id_ruta)
-                            VALUES
-                            (:id_usuario, :id_ruta)";
-
-            $consultaAuxiliar = $this->conexion->prepare($sqlAuxiliar);
-
-            $consultaAuxiliar->execute([
-                ':id_usuario' => $idUsuario,
-                ':id_ruta' => $idRuta
-            ]);
-
-            // Confirmar las dos inserciones.
-            $this->conexion->commit();
-
-            return true;
-
-        } catch (Throwable $e) {
-
-            // Si falla alguna inserción, deshacer ambas.
-            if ($this->conexion->inTransaction()) {
-                $this->conexion->rollBack();
-            }
-
-            throw $e;
-        }
+        $idUsuario = (int) $consulta->fetchColumn();
+        $consulta->closeCursor();
+        return $idUsuario;
     }
 }

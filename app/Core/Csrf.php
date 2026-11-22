@@ -27,8 +27,8 @@ class Csrf
         $guardado = $_SESSION['csrf_token'] ?? '';
 
         if ($guardado === '' || !is_string($enviado) || !hash_equals($guardado, $enviado)) {
-            http_response_code(419);
-            echo '419 - La sesión expiró o la solicitud no es válida. Recarga la página e inténtalo de nuevo.';
+            http_response_code(403);
+            echo 'La sesión expiró o la solicitud no es válida. Recarga la página e inténtalo de nuevo.';
             exit;
         }
     }

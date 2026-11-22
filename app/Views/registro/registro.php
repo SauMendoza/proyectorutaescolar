@@ -11,6 +11,7 @@
     <h1>Registro</h1>
 
     <form action="registro" method="POST">
+        <?= \App\Core\Csrf::field() ?>
 
         <label for="nombre">Nombre:</label>
         <input

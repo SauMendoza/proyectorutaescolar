@@ -3,132 +3,138 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
-use App\Core\Csrf;
 use App\Database\Connection;
 use App\Models\Auxiliar;
+use DateTime;
+use PDO;
 use PDOException;
-use Throwable;
 
+// Módulo "Auxiliares" (solo administrador): lista de auxiliares y creación de cuentas nuevas.
+// Solo la administración crea cuentas; la contraseña se guarda cifrada y no se puede ver después.
 class AuxiliarController
 {
-    // Mostrar el formulario de registro.
-    public function registro(): void
+    //Lista de auxiliares a la izquierda y formulario "Nuevo auxiliar" a la derecha
+    public function listado()
     {
         Auth::requireRole('administrador');
 
-        try {
-            $config = require dirname(__DIR__, 2) . '/config/database.php';
+        $modelo = new Auxiliar($this->conectar());
+        $auxiliares = $modelo->obtenerTodos();
+        $rutas = $modelo->obtenerRutas();
 
-            $conexion = Connection::connect($config);
+        $formulario = $_SESSION['nuevo_auxiliar'] ?? ['errores' => [], 'datos' => []];
+        $mensajeExito = $_SESSION['auxiliar_guardado'] ?? null;
+        unset($_SESSION['nuevo_auxiliar'], $_SESSION['auxiliar_guardado']);
 
-            $modelo = new Auxiliar($conexion);
-
-            $rutas = $modelo->obtenerRutas();
-            $mensaje = '';
-
-            require dirname(__DIR__) . '/Views/auxiliar/registro.php';
-
-        } catch (Throwable $e) {
-            error_log($e->getMessage());
-
-            http_response_code(500);
-            echo 'No fue posible cargar el formulario de auxiliares.';
-        }
+        require __DIR__ . '/../Views/auxiliar/registro.php';
     }
 
-    // Procesar el formulario y registrar al auxiliar.
-    public function registrar(): void
+    //Crea la cuenta del auxiliar (usuario + auxiliar)
+    public function guardar()
     {
         Auth::requireRole('administrador');
-        Csrf::verify();
 
-        $nombre = trim($_POST['nombre'] ?? '');
-        $apellido = trim($_POST['apellido'] ?? '');
-        $correo = trim($_POST['correo'] ?? '');
-        $contrasena = $_POST['contrasena'] ?? '';
-        $idRuta = filter_var(
-            $_POST['id_ruta'] ?? null,
-            FILTER_VALIDATE_INT
-        );
+        $texto = fn($campo) => is_string($_POST[$campo] ?? null) ? trim(preg_replace('/\s+/', ' ', $_POST[$campo])) : '';
+        $datos = [
+            'nombre' => $texto('nombre'),
+            'apellido' => $texto('apellido'),
+            'documento' => preg_replace('/\D/', '', $texto('documento')),
+            'telefono' => $texto('telefono'),
+            'fecha_ingreso' => $texto('fecha_ingreso'),
+            'correo' => mb_strtolower($texto('correo')),
+            'contrasena' => is_string($_POST['contrasena'] ?? null) ? $_POST['contrasena'] : '',
+            'cambiar_contrasena' => isset($_POST['cambiar_contrasena']),
+            'id_ruta' => $texto('id_ruta'),
+        ];
 
-        if (
-            $nombre === '' ||
-            $apellido === '' ||
-            $correo === '' ||
-            $contrasena === '' ||
-            !$idRuta ||
-            !filter_var($correo, FILTER_VALIDATE_EMAIL)
-        ) {
-            $mensaje = 'Completa todos los campos con información válida.';
-            $this->mostrarFormulario($mensaje);
+        $conexion = $this->conectar();
+        $modelo = new Auxiliar($conexion);
+        $idsRutas = array_map('intval', array_column($modelo->obtenerRutas(), 'id_ruta'));
+        $errores = [];
+
+        if ($datos['nombre'] === '' || mb_strlen($datos['nombre']) > 100) {
+            $errores[] = 'Escribe el nombre (máximo 100 caracteres).';
+        }
+        if ($datos['apellido'] === '' || mb_strlen($datos['apellido']) > 100) {
+            $errores[] = 'Escribe los apellidos (máximo 100 caracteres).';
+        }
+        if (!preg_match('/^\d{5,20}$/', $datos['documento'])) {
+            $errores[] = 'El documento debe tener solo números (entre 5 y 20).';
+        } elseif ($modelo->existeDocumento($datos['documento'])) {
+            $errores[] = 'Ya hay un usuario con ese documento.';
+        }
+        if (!preg_match('/^[\d\s+]{7,20}$/', $datos['telefono'])) {
+            $errores[] = 'Escribe un celular válido (solo números).';
+        }
+        $fecha = DateTime::createFromFormat('!Y-m-d', $datos['fecha_ingreso']);
+        if ($datos['fecha_ingreso'] === '') {
+            $datos['fecha_ingreso'] = date('Y-m-d');
+        } elseif (!$fecha || $fecha->format('Y-m-d') !== $datos['fecha_ingreso']) {
+            $errores[] = 'La fecha de ingreso no es válida.';
+        }
+        if (!filter_var($datos['correo'], FILTER_VALIDATE_EMAIL) || mb_strlen($datos['correo']) > 150) {
+            $errores[] = 'Escribe un correo válido.';
+        } elseif ($modelo->existeCorreo($datos['correo'])) {
+            $errores[] = 'Ese correo ya lo usa otro usuario.';
+        }
+        if (mb_strlen($datos['contrasena']) < 8 || mb_strlen($datos['contrasena']) > 72) {
+            $errores[] = 'La contraseña temporal debe tener entre 8 y 72 caracteres.';
+        }
+
+        //"0" o vacío = Ninguna (sin ruta)
+        $idRuta = filter_var($datos['id_ruta'], FILTER_VALIDATE_INT);
+        if ($idRuta === false || $idRuta === 0) {
+            $datos['id_ruta'] = null;
+        } elseif (in_array($idRuta, $idsRutas, true)) {
+            $datos['id_ruta'] = $idRuta;
+        } else {
+            $errores[] = 'La ruta elegida no existe.';
+        }
+
+        if (!$errores) {
+            try {
+                $modelo->registrar($datos);
+            } catch (PDOException $e) {
+                error_log($e->getMessage());
+                $errores[] = $e->getCode() === '23000'
+                    ? 'El correo o el documento ya están registrados.'
+                    : 'No fue posible crear la cuenta. Intenta de nuevo.';
+            }
+        }
+
+        if ($errores) {
+            //Se devuelve lo escrito para no repetirlo, menos la contraseña
+            unset($datos['contrasena']);
+            $_SESSION['nuevo_auxiliar'] = ['errores' => $errores, 'datos' => $datos];
+        } else {
+            $_SESSION['auxiliar_guardado'] = 'Cuenta de ' . $datos['nombre'] . ' ' . $datos['apellido']
+                . ' creada. Su usuario es ' . $datos['correo'] . '.';
+        }
+
+        header('Location: ' . \App\Core\Url::base() . '/auxiliares');
+        exit;
+    }
+
+    //Responde en JSON si un correo está libre (para el aviso "Disponible" del formulario)
+    public function correo()
+    {
+        Auth::requireRole('administrador');
+        header('Content-Type: application/json; charset=utf-8');
+
+        $correo = mb_strtolower(trim((string) ($_GET['correo'] ?? '')));
+        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['valido' => false, 'disponible' => false]);
             return;
         }
 
-        try {
-            $config = require dirname(__DIR__, 2) . '/config/database.php';
-
-            $conexion = Connection::connect($config);
-
-            $modelo = new Auxiliar($conexion);
-
-            // Verificar que la ruta seleccionada exista.
-            $consulta = $conexion->prepare(
-                'SELECT id_ruta FROM ruta WHERE id_ruta = :id_ruta'
-            );
-
-            $consulta->execute([
-                ':id_ruta' => $idRuta
-            ]);
-
-            if (!$consulta->fetch()) {
-                $mensaje = 'La ruta seleccionada no existe.';
-                $this->mostrarFormulario($mensaje);
-                return;
-            }
-
-            // El modelo ejecuta las dos inserciones SQL.
-            $modelo->registrar(
-                $nombre,
-                $apellido,
-                $correo,
-                $contrasena,
-                $idRuta
-            );
-
-            $mensaje = 'Auxiliar registrado correctamente.';
-
-            $this->mostrarFormulario($mensaje);
-
-        } catch (PDOException $e) {
-            error_log($e->getMessage());
-
-            if ($e->getCode() === '23000') {
-                $mensaje = 'El correo ya está registrado o existe un problema con la ruta seleccionada.';
-            } else {
-                $mensaje = 'Ocurrió un error al registrar el auxiliar.';
-            }
-
-            $this->mostrarFormulario($mensaje);
-
-        } catch (Throwable $e) {
-            error_log($e->getMessage());
-
-            $mensaje = 'No fue posible completar el registro.';
-            $this->mostrarFormulario($mensaje);
-        }
+        $disponible = !(new Auxiliar($this->conectar()))->existeCorreo($correo);
+        echo json_encode(['valido' => true, 'disponible' => $disponible]);
     }
 
-    // Cargar nuevamente el formulario con las rutas y el mensaje.
-    private function mostrarFormulario(string $mensaje): void
+    //Crea la conexión PDO con la configuración del proyecto
+    private function conectar(): PDO
     {
-        $config = require dirname(__DIR__, 2) . '/config/database.php';
-
-        $conexion = Connection::connect($config);
-
-        $modelo = new Auxiliar($conexion);
-
-        $rutas = $modelo->obtenerRutas();
-
-        require dirname(__DIR__) . '/Views/auxiliar/registro.php';
+        $config = require __DIR__ . '/../../config/database.php';
+        return Connection::connect($config);
     }
 }

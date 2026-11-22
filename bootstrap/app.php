@@ -12,6 +12,9 @@ $dotenv->safeLoad();
 $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
     || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
 
+// Hora de Colombia: las asistencias guardan la hora y la fecha de hoy con esta zona
+date_default_timezone_set('America/Bogota');
+
 session_set_cookie_params([
     'lifetime' => 0,
     'path'     => '/',

@@ -2,6 +2,8 @@
 
 namespace App\Core;
 
+use App\Core\Csrf;
+
 class Router
 {
     private array $routes = [];
@@ -43,6 +45,11 @@ class Router
             http_response_code(404);
             echo '404 - Página no encontrada';
             return;
+        }
+
+        // Todo POST debe traer el token CSRF del formulario (protege contra envíos desde otras páginas)
+        if ($method === 'POST') {
+            Csrf::verify();
         }
 
         // Recuperamos la acción registrada para esta ruta

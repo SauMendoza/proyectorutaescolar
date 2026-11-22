@@ -2,8 +2,7 @@
 namespace App\Controllers;
 
 // Use
-use App\Core\Csrf;
-use App\Core\Url;
+use App\Core\Auth;
 use App\Database\Connection;
 use PDOException;
 
@@ -25,12 +24,10 @@ class LoginController
 
     public function autenticate():void
     {
-        // Verificamos el token CSRF antes de procesar nada.
-        Csrf::verify();
 
         //Recibimos los datos del formulario.
         $correo= trim($_POST['correo']??'');
-        $contrasena = $_POST['contrasena'] ?? '';
+        $contrasena = trim($_POST['contrasena']??'');
         $rol = $_POST['rol'] ?? 'administrador';
 
         //Conservamos lo escrito por si hay que volver al formulario.
@@ -60,7 +57,7 @@ class LoginController
         }
 
         // Preparamos la consulta para buscar al usuario por correo.
-        $sql = "SELECT id_usuario, nombre, apellido, correo, contrasena
+        $sql = "SELECT id_usuario, nombre, apellido, correo, contrasena, cambiar_contrasena
                 FROM usuario
                 WHERE correo = :correo
                 LIMIT 1";
@@ -129,26 +126,95 @@ class LoginController
             'apellido' => $usuario['apellido'],
             'correo' => $usuario['correo'],
             'rol' => $datosRol['rol'],
-            'id_ruta' => $datosRol['fk_id_ruta']
+            'id_ruta' => $datosRol['fk_id_ruta'],
+            'cambiar_contrasena' => (bool) $usuario['cambiar_contrasena']
         ];
 
+        //Guardamos la hora del ingreso (el administrador la ve en Auxiliares: "Entró hoy 06:02")
+        $pdo->prepare('UPDATE usuario SET ultimo_ingreso = NOW() WHERE id_usuario = :id')
+            ->execute(['id' => $usuario['id_usuario']]);
+
+        //Con contraseña temporal, primero debe poner una propia
+        if ($_SESSION['usuario']['cambiar_contrasena']) {
+            header('Location: ' . \App\Core\Url::base() . '/cambiar-contrasena');
+            exit;
+        }
+
         //header realiza la redirección a la pagina de inicio de cada rol
-        $inicio = $datosRol['rol'] === 'administrador' ? '/' : '/estudiantes';
-        Url::redirect($inicio);
+        //Los dos roles entran al Panel; cada uno ve el suyo
+        header('Location: ' . \App\Core\Url::base() . '/');
+        exit;
+    }
+
+    //Pantalla para cambiar la contraseña temporal por una propia (primer ingreso)
+    public function cambiarContrasena(): void
+    {
+        Auth::requireLogin(true);
+
+        if (empty($_SESSION['usuario']['cambiar_contrasena'])) {
+            header('Location: ' . \App\Core\Url::base() . '/');
+            exit;
+        }
+
+        $error = $_SESSION['contrasena_error'] ?? null;
+        unset($_SESSION['contrasena_error']);
+        $nombre = $_SESSION['usuario']['nombre'];
+
+        require __DIR__ . '/../Views/auth/cambiar_contrasena.php';
+    }
+
+    //Guarda la contraseña nueva y quita la marca de contraseña temporal
+    public function guardarContrasena(): void
+    {
+        Auth::requireLogin(true);
+
+        $actual = trim((string) ($_POST['actual'] ?? ''));
+        $nueva = trim((string) ($_POST['nueva'] ?? ''));
+        $repetir = trim((string) ($_POST['repetir'] ?? ''));
+        $idUsuario = (int) $_SESSION['usuario']['id_usuario'];
+
+        $config = require __DIR__ . '/../../config/database.php';
+        $pdo = Connection::connect($config);
+        $consulta = $pdo->prepare('SELECT contrasena FROM usuario WHERE id_usuario = :id');
+        $consulta->execute(['id' => $idUsuario]);
+        $hash = (string) $consulta->fetchColumn();
+
+        $error = null;
+        if (!password_verify($actual, $hash)) {
+            $error = 'La contraseña temporal no es correcta.';
+        } elseif (mb_strlen($nueva) < 8 || mb_strlen($nueva) > 72) {
+            $error = 'La contraseña nueva debe tener entre 8 y 72 caracteres.';
+        } elseif ($nueva !== $repetir) {
+            $error = 'Las dos contraseñas nuevas no coinciden.';
+        } elseif ($nueva === $actual) {
+            $error = 'La contraseña nueva debe ser distinta a la temporal.';
+        }
+
+        if ($error) {
+            $_SESSION['contrasena_error'] = $error;
+            header('Location: ' . \App\Core\Url::base() . '/cambiar-contrasena');
+            exit;
+        }
+
+        $pdo->prepare('UPDATE usuario SET contrasena = :hash, cambiar_contrasena = 0 WHERE id_usuario = :id')
+            ->execute(['hash' => password_hash($nueva, PASSWORD_DEFAULT), 'id' => $idUsuario]);
+
+        $_SESSION['usuario']['cambiar_contrasena'] = false;
+        session_regenerate_id(true);
+        header('Location: ' . \App\Core\Url::base() . '/');
+        exit;
     }
 
     //Vuelve al formulario mostrando el mensaje en la tarjeta.
     private function volverAlLogin(string $mensaje): void
     {
         $_SESSION['login_error'] = $mensaje;
-        Url::redirect('/login');
+        header('Location: ' . \App\Core\Url::base() . '/login');
+        exit;
     }
  
     //Función para cerrar sesión
     public function logout(): void{
-    // Verificamos el token CSRF antes de cerrar la sesión.
-    Csrf::verify();
-
     //Esto se encarga de eliminar las cookies que almacenan la pagina que de inicio a la que no se debe acceder despues de cerrar sesion
     $_SESSION = [];
     if (ini_get('session.use_cookies')) {
@@ -166,7 +232,8 @@ class LoginController
 
     
     // Redirigimos al usuario al login.
-    Url::redirect('/login');
+    header('Location: ' . \App\Core\Url::base() . '/login');
+    exit;
     }
             
 }

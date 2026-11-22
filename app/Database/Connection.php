@@ -26,6 +26,13 @@ class Connection
             PDO::ATTR_EMULATE_PREPARES => false,
         ];
 
+        // La base de datos usa la hora de Colombia (UTC-5) para CURDATE(), NOW() y las vistas de "hoy".
+        // Azure trabaja en UTC: sin esto, después de las 7 p. m. la base ya estaría en "mañana".
+        $atributoInicio = class_exists(\Pdo\Mysql::class)
+            ? \Pdo\Mysql::ATTR_INIT_COMMAND
+            : \PDO::MYSQL_ATTR_INIT_COMMAND;
+        $opciones[$atributoInicio] = "SET time_zone = '-05:00'";
+
         // Conexión cifrada (necesaria en Azure Database for MySQL).
         if (!empty($config['ssl'])) {
             $atributoSsl = class_exists(\Pdo\Mysql::class)
