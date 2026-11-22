@@ -27,10 +27,9 @@
 CREATE DATABASE IF NOT EXISTS ruta_escolar_v3 CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE ruta_escolar_v3;
 
--- Todo (tablas, funciones y procedimientos) con la misma intercalación. Si la base
--- se creó desde el portal con la de MySQL 8 (utf8mb4_0900_ai_ci), las funciones
--- chocarían con las columnas ("Illegal mix of collations").
-ALTER DATABASE ruta_escolar_v3 CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+-- No se cambia la intercalación de una base que ya existe: las funciones y
+-- procedimientos toman la de la base, y así coinciden con la de sus tablas
+-- (si fueran distintas saldría "Illegal mix of collations").
 
 
 -- #####################################################################
@@ -249,6 +248,10 @@ CALL sp_agregar_columna('usuario', 'salario', 'DECIMAL(12,2) NULL AFTER telefono
 CALL sp_agregar_columna('usuario', 'fecha_ingreso', 'DATE NULL AFTER salario');
 CALL sp_agregar_columna('usuario', 'ultimo_ingreso', 'DATETIME NULL AFTER fecha_ingreso');
 CALL sp_agregar_columna('usuario', 'cambiar_contrasena', 'TINYINT(1) NOT NULL DEFAULT 0 AFTER contrasena');
+
+-- Estudiantes de una base vieja: quedan sin fecha (NULL) hasta que se edite su ficha.
+CALL sp_agregar_columna('estudiante', 'fecha_nacimiento', 'DATE NULL AFTER segundo_apellido');
+CALL sp_agregar_columna('estudiante', 'edad', 'INT NULL AFTER fecha_nacimiento');
 
 DROP PROCEDURE sp_agregar_columna;
 
