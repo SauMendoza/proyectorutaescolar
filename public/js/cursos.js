@@ -1,6 +1,6 @@
 // JavaScript del módulo de cursos.
 // 1) Pestañas Todas / Ruta 1 / Ruta 2: muestran solo los estudiantes de esa ruta.
-// 2) Ventana "Nuevo curso": abrir y cerrar.
+// 2) Ventanas (nuevo, editar, eliminar): abrir y cerrar.
 
 // ---------------------------------------------------------------------------
 // 1) Pestañas por ruta

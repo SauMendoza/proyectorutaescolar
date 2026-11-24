@@ -36,8 +36,8 @@ $iconoQr = '<svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><rect x="3
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400..800&display=swap">
-    <link rel="stylesheet" href="<?= e($base) ?>/css/app.css">
-    <link rel="stylesheet" href="<?= e($base) ?>/css/asistencia.css">
+    <link rel="stylesheet" href="<?= \App\Core\Url::recurso('/css/app.css') ?>">
+    <link rel="stylesheet" href="<?= \App\Core\Url::recurso('/css/asistencia.css') ?>">
 </head>
 <body>
     <?php require __DIR__ . '/../components/lateral.php'; ?>
@@ -280,9 +280,9 @@ $iconoQr = '<svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><rect x="3
                 <article class="hoja" id="hoja" aria-live="assertive"></article>
             </div>
         </dialog>
-        <script src="<?= e($base) ?>/js/jsQR.js"></script>
+        <script src="<?= \App\Core\Url::recurso('/js/jsQR.js') ?>"></script>
     <?php endif; ?>
 
-    <script src="<?= e($base) ?>/js/asistencia.js"></script>
+    <script src="<?= \App\Core\Url::recurso('/js/asistencia.js') ?>"></script>
 </body>
 </html>

@@ -20,7 +20,7 @@ if (!function_exists('e')) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400..800&display=swap">
-    <link rel="stylesheet" href="<?= e($base) ?>/css/login.css">
+    <link rel="stylesheet" href="<?= \App\Core\Url::recurso('/css/login.css') ?>">
 </head>
 <body>
     <div class="franja" aria-hidden="true"></div>

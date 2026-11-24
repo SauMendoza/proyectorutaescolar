@@ -142,6 +142,16 @@
         'guardar'
     ]);
 
+    $router->post('/cursos/editar', [
+        CursoController::class,
+        'actualizar'
+    ]);
+
+    $router->post('/cursos/eliminar', [
+        CursoController::class,
+        'eliminar'
+    ]);
+
     // Rutas: el administrador ve y edita todas; el auxiliar ve solo la suya
     $router->get('/rutas', [
         RutaController::class,

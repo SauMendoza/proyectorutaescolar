@@ -43,8 +43,8 @@ $textoIngreso = function (?string $fechaHora): string {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400..800&display=swap">
-    <link rel="stylesheet" href="<?= e($base) ?>/css/app.css">
-    <link rel="stylesheet" href="<?= e($base) ?>/css/auxiliares.css">
+    <link rel="stylesheet" href="<?= \App\Core\Url::recurso('/css/app.css') ?>">
+    <link rel="stylesheet" href="<?= \App\Core\Url::recurso('/css/auxiliares.css') ?>">
 </head>
 <body>
     <?php require __DIR__ . '/../components/lateral.php'; ?>
@@ -248,6 +248,6 @@ $textoIngreso = function (?string $fechaHora): string {
         </dialog>
     <?php endforeach; ?>
 
-    <script src="<?= e($base) ?>/js/auxiliares.js"></script>
+    <script src="<?= \App\Core\Url::recurso('/js/auxiliares.js') ?>"></script>
 </body>
 </html>

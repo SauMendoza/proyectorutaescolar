@@ -56,6 +56,8 @@
     margin-bottom: 6px;
 }
 
+.detalle-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+
 .estudiante-curso {
     border-bottom: 1px solid var(--borde-suave);
 }

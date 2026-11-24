@@ -1,6 +1,7 @@
 <?php
 // Cursos. Datos de CursoController::listado():
-// $cursos, $cursoElegido, $estudiantes, $paradasPorRuta, $rutasCurso, $formulario, $mensajeExito
+// $cursos, $cursoElegido, $estudiantes, $paradasPorRuta, $rutasCurso, $formulario, $mensajeExito,
+// $edicion (datos si falló el cambio de nombre) y $errorCurso
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
 
 if (!function_exists('e')) {
@@ -21,8 +22,8 @@ $totalEstudiantes = count($estudiantes);
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400..800&display=swap">
-    <link rel="stylesheet" href="<?= e($base) ?>/css/app.css">
-    <link rel="stylesheet" href="<?= e($base) ?>/css/cursos.css">
+    <link rel="stylesheet" href="<?= \App\Core\Url::recurso('/css/app.css') ?>">
+    <link rel="stylesheet" href="<?= \App\Core\Url::recurso('/css/cursos.css') ?>">
 </head>
 <body>
     <?php require __DIR__ . '/../components/lateral.php'; ?>
@@ -38,6 +39,10 @@ $totalEstudiantes = count($estudiantes);
 
         <?php if ($mensajeExito): ?>
             <p class="aviso aviso-exito" role="status"><?= e($mensajeExito) ?></p>
+        <?php endif; ?>
+
+        <?php if ($errorCurso): ?>
+            <p class="aviso aviso-error" role="alert"><?= e($errorCurso) ?></p>
         <?php endif; ?>
 
         <div class="cursos">
@@ -68,6 +73,7 @@ $totalEstudiantes = count($estudiantes);
                             <p class="etiqueta">ID <?= str_pad((string) $cursoElegido['id_curso'], 2, '0', STR_PAD_LEFT) ?> · <span id="conteo-curso"><?= $totalEstudiantes ?> de <?= $totalEstudiantes ?></span> estudiantes</p>
                             <h2><?= e($cursoElegido['nombre']) ?></h2>
                         </div>
+                        <div class="detalle-acciones">
                         <?php if (count($rutasCurso) > 1): ?>
                             <div class="pestanas pestanas-amarillas" role="group" aria-label="Filtrar por ruta" data-total="<?= $totalEstudiantes ?>">
                                 <button type="button" class="activo" data-ruta="" aria-pressed="true">Todas</button>
@@ -76,6 +82,8 @@ $totalEstudiantes = count($estudiantes);
                                 <?php endforeach; ?>
                             </div>
                         <?php endif; ?>
+                            <button type="button" class="boton boton-borde boton-chico" data-abrir-ventana="ventana-editar-curso">Editar</button>
+                        </div>
                     </header>
 
                     <?php if ($totalEstudiantes === 0): ?>
@@ -170,6 +178,67 @@ $totalEstudiantes = count($estudiantes);
         </form>
     </dialog>
 
-    <script src="<?= e($base) ?>/js/cursos.js"></script>
+    <?php if ($cursoElegido): ?>
+        <!-- Ventana "Editar curso": cambia el nombre -->
+        <dialog class="ventana ventana-chica" id="ventana-editar-curso" aria-labelledby="titulo-editar-curso" <?= $edicion ? 'data-abrir' : '' ?>>
+            <form action="<?= e($base) ?>/cursos/editar" method="POST">
+                <?= \App\Core\Csrf::field() ?>
+                <input type="hidden" name="id_curso" value="<?= (int) $cursoElegido['id_curso'] ?>">
+                <div class="ventana-cabecera">
+                    <div>
+                        <p class="etiqueta">ID <?= str_pad((string) $cursoElegido['id_curso'], 2, '0', STR_PAD_LEFT) ?></p>
+                        <h2 id="titulo-editar-curso">Editar curso</h2>
+                    </div>
+                    <button type="button" class="cerrar-ventana" data-cerrar-ventana aria-label="Cerrar">×</button>
+                </div>
+
+                <?php if ($edicion): ?>
+                    <p class="aviso aviso-error" role="alert"><?= e($edicion['error']) ?></p>
+                <?php endif; ?>
+
+                <div class="campos">
+                    <label class="campo-completo">Nombre del curso
+                        <input type="text" name="nombre" value="<?= e($edicion['nombre'] ?? $cursoElegido['nombre']) ?>" required maxlength="50" autocomplete="off">
+                    </label>
+                </div>
+
+                <div class="ventana-acciones">
+                    <button type="button" class="boton boton-peligro" data-cerrar-ventana data-abrir-ventana="ventana-borrar-curso">Eliminar curso</button>
+                    <button type="button" class="boton boton-borde" data-cerrar-ventana>Cancelar</button>
+                    <button type="submit" class="boton boton-amarillo">Guardar</button>
+                </div>
+            </form>
+        </dialog>
+
+        <!-- Ventana "Eliminar curso": solo si no tiene estudiantes -->
+        <dialog class="ventana ventana-chica" id="ventana-borrar-curso" aria-labelledby="titulo-borrar-curso">
+            <form action="<?= e($base) ?>/cursos/eliminar" method="POST">
+                <?= \App\Core\Csrf::field() ?>
+                <input type="hidden" name="id_curso" value="<?= (int) $cursoElegido['id_curso'] ?>">
+                <div class="ventana-cabecera">
+                    <div>
+                        <p class="etiqueta">Eliminar curso</p>
+                        <h2 id="titulo-borrar-curso"><?= e($cursoElegido['nombre']) ?></h2>
+                    </div>
+                    <button type="button" class="cerrar-ventana" data-cerrar-ventana aria-label="Cerrar">×</button>
+                </div>
+
+                <?php if ($totalEstudiantes > 0): ?>
+                    <p class="aviso aviso-error">No se puede eliminar: tiene <?= $totalEstudiantes ?> <?= $totalEstudiantes === 1 ? 'estudiante' : 'estudiantes' ?>. Pásalos primero a otro curso desde su ficha, con "Editar".</p>
+                <?php else: ?>
+                    <p>Este curso no tiene estudiantes. Si lo eliminas, no se puede deshacer.</p>
+                <?php endif; ?>
+
+                <div class="ventana-acciones">
+                    <button type="button" class="boton boton-borde" data-cerrar-ventana>Cancelar</button>
+                    <?php if ($totalEstudiantes === 0): ?>
+                        <button type="submit" class="boton boton-peligro">Sí, eliminar</button>
+                    <?php endif; ?>
+                </div>
+            </form>
+        </dialog>
+    <?php endif; ?>
+
+    <script src="<?= \App\Core\Url::recurso('/js/cursos.js') ?>"></script>
 </body>
 </html>

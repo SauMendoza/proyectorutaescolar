@@ -13,7 +13,7 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400..800&display=swap">
-    <link rel="stylesheet" href="<?= htmlspecialchars($base, ENT_QUOTES, 'UTF-8') ?>/css/login.css">
+    <link rel="stylesheet" href="<?= \App\Core\Url::recurso('/css/login.css') ?>">
 </head>
 <body>
 
@@ -108,6 +108,6 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
 
     <footer class="pie">© <?= date('Y') ?> I.E. N° 4 San José Campestre · v1.0</footer>
 
-    <script src="<?= htmlspecialchars($base, ENT_QUOTES, 'UTF-8') ?>/js/login.js"></script>
+    <script src="<?= \App\Core\Url::recurso('/js/login.js') ?>"></script>
 </body>
 </html>

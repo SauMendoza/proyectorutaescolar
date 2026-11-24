@@ -70,8 +70,8 @@ if ($esAdmin) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400..800&display=swap">
-    <link rel="stylesheet" href="<?= e($base) ?>/css/app.css">
-    <link rel="stylesheet" href="<?= e($base) ?>/css/rutas.css">
+    <link rel="stylesheet" href="<?= \App\Core\Url::recurso('/css/app.css') ?>">
+    <link rel="stylesheet" href="<?= \App\Core\Url::recurso('/css/rutas.css') ?>">
 </head>
 <body>
     <?php require __DIR__ . '/../components/lateral.php'; ?>
@@ -272,6 +272,6 @@ if ($esAdmin) {
         <?php endforeach; ?>
     <?php endif; ?>
 
-    <script src="<?= e($base) ?>/js/rutas.js"></script>
+    <script src="<?= \App\Core\Url::recurso('/js/rutas.js') ?>"></script>
 </body>
 </html>

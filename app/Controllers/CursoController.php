@@ -39,7 +39,9 @@ class CursoController
 
         $formulario = $_SESSION['nuevo_curso'] ?? ['error' => null, 'nombre' => ''];
         $mensajeExito = $_SESSION['curso_guardado'] ?? null;
-        unset($_SESSION['nuevo_curso'], $_SESSION['curso_guardado']);
+        $edicion = $_SESSION['editar_curso'] ?? null;
+        $errorCurso = $_SESSION['curso_error'] ?? null;
+        unset($_SESSION['nuevo_curso'], $_SESSION['curso_guardado'], $_SESSION['editar_curso'], $_SESSION['curso_error']);
 
         require __DIR__ . '/../Views/cursos/listado.php';
     }
@@ -49,15 +51,9 @@ class CursoController
     {
         Auth::requireRole('administrador');
 
-        $nombre = is_string($_POST['nombre'] ?? null) ? trim(preg_replace('/\s+/', ' ', $_POST['nombre'])) : '';
+        $nombre = $this->nombreRecibido();
         $modelo = new Curso($this->conectar());
-
-        $error = null;
-        if ($nombre === '' || mb_strlen($nombre) > 50) {
-            $error = 'Escribe el nombre del curso (máximo 50 caracteres).';
-        } elseif ($modelo->existeNombre($nombre)) {
-            $error = 'Ya existe un curso con ese nombre.';
-        }
+        $error = $this->validarNombre($modelo, $nombre);
 
         if ($error) {
             $_SESSION['nuevo_curso'] = ['error' => $error, 'nombre' => $nombre];
@@ -69,6 +65,76 @@ class CursoController
         $_SESSION['curso_guardado'] = 'Curso "' . $nombre . '" creado.';
         header('Location: ' . \App\Core\Url::base() . '/cursos?curso=' . $idCurso);
         exit;
+    }
+
+    //Cambia el nombre de un curso
+    public function actualizar()
+    {
+        Auth::requireRole('administrador');
+
+        $modelo = new Curso($this->conectar());
+        $curso = $this->cursoRecibido($modelo);
+        $idCurso = (int) $curso['id_curso'];
+        $nombre = $this->nombreRecibido();
+        $error = $this->validarNombre($modelo, $nombre, $idCurso);
+
+        if ($error) {
+            $_SESSION['editar_curso'] = ['error' => $error, 'nombre' => $nombre];
+        } else {
+            $modelo->cambiarNombre($idCurso, $nombre);
+            $_SESSION['curso_guardado'] = 'Cambios guardados: "' . $nombre . '".';
+        }
+
+        header('Location: ' . \App\Core\Url::base() . '/cursos?curso=' . $idCurso);
+        exit;
+    }
+
+    //Elimina un curso que no tenga estudiantes
+    public function eliminar()
+    {
+        Auth::requireRole('administrador');
+
+        $modelo = new Curso($this->conectar());
+        $curso = $this->cursoRecibido($modelo);
+        $idCurso = (int) $curso['id_curso'];
+
+        if ((int) $curso['estudiantes'] > 0 || !$modelo->eliminar($idCurso)) {
+            $_SESSION['curso_error'] = 'No se borró "' . $curso['nombre'] . '": tiene estudiantes. Pásalos primero a otro curso.';
+            header('Location: ' . \App\Core\Url::base() . '/cursos?curso=' . $idCurso);
+            exit;
+        }
+
+        $_SESSION['curso_guardado'] = 'Se borró el curso "' . $curso['nombre'] . '".';
+        header('Location: ' . \App\Core\Url::base() . '/cursos');
+        exit;
+    }
+
+    //Curso enviado en el formulario; si no existe, vuelve a la lista con un aviso
+    private function cursoRecibido(Curso $modelo): array
+    {
+        $idCurso = filter_var($_POST['id_curso'] ?? '', FILTER_VALIDATE_INT);
+        $curso = $idCurso ? $modelo->buscar($idCurso) : null;
+
+        if (!$curso) {
+            $_SESSION['curso_error'] = 'No se encontró el curso.';
+            header('Location: ' . \App\Core\Url::base() . '/cursos');
+            exit;
+        }
+        return $curso;
+    }
+
+    private function nombreRecibido(): string
+    {
+        return is_string($_POST['nombre'] ?? null) ? trim(preg_replace('/\s+/', ' ', $_POST['nombre'])) : '';
+    }
+
+    //Mensaje de error del nombre, o null si sirve
+    private function validarNombre(Curso $modelo, string $nombre, int $exceptoId = 0): ?string
+    {
+        if ($nombre === '' || mb_strlen($nombre) > 50) {
+            return 'Escribe el nombre del curso (máximo 50 caracteres).';
+        }
+        return $modelo->existeNombre($nombre, $exceptoId) ? 'Ya existe un curso con ese nombre.' : null;
     }
 
     //Crea la conexión PDO con la configuración del proyecto

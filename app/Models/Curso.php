@@ -52,12 +52,49 @@ class Curso
         return $consulta->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Indica si ya existe un curso con ese nombre (sin importar mayúsculas).
-    public function existeNombre(string $nombre): bool
+    // Un curso con su cantidad de estudiantes, o null si no existe.
+    public function buscar(int $idCurso): ?array
     {
-        $consulta = $this->conexion->prepare('SELECT 1 FROM curso WHERE LOWER(nombre) = LOWER(:nombre)');
-        $consulta->execute([':nombre' => $nombre]);
+        $consulta = $this->conexion->prepare(
+            'SELECT c.id_curso, c.nombre,
+                    (SELECT COUNT(*) FROM estudiante e WHERE e.fk_id_curso = c.id_curso) AS estudiantes
+             FROM curso c WHERE c.id_curso = :id'
+        );
+        $consulta->execute([':id' => $idCurso]);
+        return $consulta->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    // Indica si otro curso ya tiene ese nombre (sin importar mayúsculas).
+    // $exceptoId es el curso que se está editando: su propio nombre no cuenta.
+    public function existeNombre(string $nombre, int $exceptoId = 0): bool
+    {
+        $consulta = $this->conexion->prepare(
+            'SELECT 1 FROM curso WHERE LOWER(nombre) = LOWER(:nombre) AND id_curso <> :id'
+        );
+        $consulta->execute([':nombre' => $nombre, ':id' => $exceptoId]);
         return (bool) $consulta->fetchColumn();
+    }
+
+    // Cambia el nombre; los estudiantes siguen en el curso porque se unen por id.
+    public function cambiarNombre(int $idCurso, string $nombre): void
+    {
+        $consulta = $this->conexion->prepare('UPDATE curso SET nombre = :nombre WHERE id_curso = :id');
+        $consulta->execute([':nombre' => $nombre, ':id' => $idCurso]);
+    }
+
+    // Borra el curso. Si tiene estudiantes, la llave foránea lo impide y devuelve false.
+    public function eliminar(int $idCurso): bool
+    {
+        try {
+            $consulta = $this->conexion->prepare('DELETE FROM curso WHERE id_curso = :id');
+            $consulta->execute([':id' => $idCurso]);
+            return $consulta->rowCount() === 1;
+        } catch (\PDOException $error) {
+            if ($error->getCode() === '23000') {
+                return false;
+            }
+            throw $error;
+        }
     }
 
     // Crea un curso y devuelve su id.
