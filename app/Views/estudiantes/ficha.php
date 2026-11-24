@@ -33,6 +33,10 @@ $nombreCompleto = trim(implode(' ', array_filter([
     <?php require __DIR__ . '/../components/lateral.php'; ?>
 
     <main class="contenido">
+        <?php if ($mensajeExito): ?>
+            <p class="aviso aviso-exito" role="status"><?= e($mensajeExito) ?></p>
+        <?php endif; ?>
+
         <header class="panel ficha-cabecera">
             <span class="inicial-grande"><?= e(mb_strtoupper(mb_substr($ficha['nombre'], 0, 1))) ?></span>
             <div>
@@ -41,9 +45,12 @@ $nombreCompleto = trim(implode(' ', array_filter([
                 <div class="insignias">
                     <span class="insignia mono"><?= e($ficha['tipo_doc_estu'] . ' ' . $ficha['num_doc_estu']) ?></span>
                     <span class="insignia">Curso <?= e($ficha['curso']) ?></span>
-                    <span class="insignia"><?= e($ficha['edad']) ?> años</span>
+                    <span class="insignia"><?= $ficha['edad'] !== null ? e($ficha['edad']) . ' años' : 'Sin fecha de nacimiento' ?></span>
                 </div>
             </div>
+            <?php if ($esAdmin): ?>
+                <button type="button" class="boton boton-amarillo" data-abrir-ventana="ventana-editar">Editar</button>
+            <?php endif; ?>
         </header>
 
         <div class="ficha">
@@ -197,6 +204,160 @@ $nombreCompleto = trim(implode(' ', array_filter([
             </div>
         </div>
     </main>
+
+    <?php if ($esAdmin): ?>
+        <?php
+        //Lo que se muestra en "Editar": lo que se escribió (si hubo errores) o lo guardado
+        $datos = $edicion['datos'] ?? [
+            'tipo_documento' => $ficha['tipo_doc_estu'],
+            'nombre' => $ficha['nombre'], 'segundo_nombre' => $ficha['segundo_nombre'],
+            'apellido' => $ficha['apellido'], 'segundo_apellido' => $ficha['segundo_apellido'],
+            'fecha_nacimiento' => $ficha['fecha_nacimiento'],
+            'curso' => $ficha['id_curso'], 'parada' => $ficha['id_parada'],
+        ];
+        if (!$edicion) {
+            foreach ($acudientes as $acudiente) {
+                $prefijo = strtolower($acudiente['tipo_acudiente']);
+                $datos[$prefijo . '_documento'] = $acudiente['num_doc_acu'];
+                $datos[$prefijo . '_parentesco'] = $acudiente['fk_id_parentesco'];
+            }
+        }
+        $dato = fn(string $campo): string => (string) ($datos[$campo] ?? '');
+        $marcado = fn(string $campo, $valor): string => $dato($campo) === (string) $valor ? 'selected' : '';
+        ?>
+        <dialog class="ventana" id="ventana-editar" aria-labelledby="titulo-editar" <?= $edicion ? 'data-abrir' : '' ?>>
+            <form action="<?= e($base) ?>/estudiantes/editar" method="POST">
+                <?= \App\Core\Csrf::field() ?>
+                <input type="hidden" name="documento" value="<?= e($ficha['num_doc_estu']) ?>">
+                <div class="ventana-cabecera">
+                    <div>
+                        <p class="etiqueta">Documento <?= e($ficha['num_doc_estu']) ?></p>
+                        <h2 id="titulo-editar">Editar estudiante</h2>
+                    </div>
+                    <button type="button" class="cerrar-ventana" data-cerrar-ventana aria-label="Cerrar">×</button>
+                </div>
+
+                <?php if ($edicion): ?>
+                    <div class="aviso aviso-error" role="alert">
+                        Revisa estos datos:
+                        <ul>
+                            <?php foreach ($edicion['errores'] as $error): ?>
+                                <li><?= e($error) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+
+                <div class="campos">
+                    <label>Primer nombre *
+                        <input type="text" name="nombre" value="<?= e($dato('nombre')) ?>" required maxlength="45">
+                    </label>
+                    <label>Segundo nombre
+                        <input type="text" name="segundo_nombre" value="<?= e($dato('segundo_nombre')) ?>" maxlength="45">
+                    </label>
+                    <label>Primer apellido *
+                        <input type="text" name="apellido" value="<?= e($dato('apellido')) ?>" required maxlength="45">
+                    </label>
+                    <label>Segundo apellido
+                        <input type="text" name="segundo_apellido" value="<?= e($dato('segundo_apellido')) ?>" maxlength="45">
+                    </label>
+                    <label>Tipo de documento *
+                        <select name="tipo_documento" required>
+                            <option value="">Elige…</option>
+                            <?php foreach ($tiposDocumento as $sigla => $nombre): ?>
+                                <option value="<?= e($sigla) ?>" <?= $marcado('tipo_documento', $sigla) ?>><?= e($sigla . ' · ' . $nombre) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                    <label>Fecha de nacimiento *
+                        <input type="date" name="fecha_nacimiento" value="<?= e($dato('fecha_nacimiento')) ?>" required max="<?= date('Y-m-d') ?>">
+                    </label>
+                    <label>Curso *
+                        <select name="curso" required>
+                            <option value="">Elige…</option>
+                            <?php foreach ($cursos as $curso): ?>
+                                <option value="<?= (int) $curso['id_curso'] ?>" <?= $marcado('curso', $curso['id_curso']) ?>><?= e($curso['nombre']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                    <label>Ruta y parada *
+                        <select name="parada" required>
+                            <option value="">Elige…</option>
+                            <?php foreach ($rutas as $ruta): ?>
+                                <optgroup label="<?= e($ruta['nombre']) ?>">
+                                    <?php foreach ($todasParadas as $parada): ?>
+                                        <?php if ((int) $parada['fk_id_ruta'] === (int) $ruta['id_ruta']): ?>
+                                            <option value="<?= (int) $parada['id_parada'] ?>" <?= $marcado('parada', $parada['id_parada']) ?>><?= e($parada['nombre']) ?></option>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+
+                    <?php foreach (['principal' => 'Acudiente principal *', 'suplente' => 'Acudiente suplente'] as $prefijo => $titulo): ?>
+                        <label><?= $titulo ?>
+                            <select name="<?= $prefijo ?>_documento" <?= $prefijo === 'principal' ? 'required' : '' ?>>
+                                <option value=""><?= $prefijo === 'principal' ? 'Elige…' : 'Ninguno' ?></option>
+                                <?php foreach ($todosAcudientes as $opcion): ?>
+                                    <option value="<?= e($opcion['num_doc_acu']) ?>" <?= $marcado($prefijo . '_documento', $opcion['num_doc_acu']) ?>><?= e($opcion['nombre_acu'] . ' ' . $opcion['apellido_acu'] . ' · ' . $opcion['num_doc_acu']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
+                        <label>Parentesco
+                            <select name="<?= $prefijo ?>_parentesco" <?= $prefijo === 'principal' ? 'required' : '' ?>>
+                                <option value="">Elige…</option>
+                                <?php foreach ($parentescos as $parentesco): ?>
+                                    <option value="<?= (int) $parentesco['id_parentesco'] ?>" <?= $marcado($prefijo . '_parentesco', $parentesco['id_parentesco']) ?>><?= e($parentesco['nombre']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+                <p class="nota">El documento no se cambia: es el que lleva el QR del carné. ¿El acudiente no está en la lista? Créalo primero en Acudientes.</p>
+
+                <div class="ventana-acciones">
+                    <button type="button" class="boton boton-peligro" data-cerrar-ventana data-abrir-ventana="ventana-borrar">Borrar estudiante</button>
+                    <button type="button" class="boton boton-borde" data-cerrar-ventana>Cancelar</button>
+                    <button type="submit" class="boton boton-amarillo">Guardar cambios</button>
+                </div>
+            </form>
+        </dialog>
+
+        <dialog class="ventana" id="ventana-borrar" aria-labelledby="titulo-borrar" <?= $errorBorrar ? 'data-abrir' : '' ?>>
+            <form action="<?= e($base) ?>/estudiantes/eliminar" method="POST" autocomplete="off">
+                <?= \App\Core\Csrf::field() ?>
+                <input type="hidden" name="documento" value="<?= e($ficha['num_doc_estu']) ?>">
+                <div class="ventana-cabecera">
+                    <div>
+                        <p class="etiqueta etiqueta-alerta">No se puede deshacer</p>
+                        <h2 id="titulo-borrar">Borrar a <?= e($nombreCompleto) ?></h2>
+                    </div>
+                    <button type="button" class="cerrar-ventana" data-cerrar-ventana aria-label="Cerrar">×</button>
+                </div>
+
+                <?php if ($errorBorrar): ?>
+                    <p class="aviso aviso-error" role="alert"><?= e($errorBorrar) ?></p>
+                <?php endif; ?>
+
+                <ul>
+                    <li>Se borran sus datos y <strong><?= $totalAsistencias ?> asistencia<?= $totalAsistencias === 1 ? '' : 's' ?></strong>.</li>
+                    <li>Se quita su vínculo con <strong><?= count($acudientes) ?> acudiente<?= count($acudientes) === 1 ? '' : 's' ?></strong>. Los acudientes no se borran.</li>
+                </ul>
+
+                <div class="campos">
+                    <label class="campo-completo">Para confirmar, escribe su documento: <?= e($ficha['num_doc_estu']) ?>
+                        <input type="text" name="confirmacion" required maxlength="20" class="mono">
+                    </label>
+                </div>
+
+                <div class="ventana-acciones">
+                    <button type="button" class="boton boton-borde" data-cerrar-ventana>Cancelar</button>
+                    <button type="submit" class="boton boton-peligro">Borrar definitivamente</button>
+                </div>
+            </form>
+        </dialog>
+    <?php endif; ?>
 
     <script src="<?= e($base) ?>/js/qrcode.js"></script>
     <script src="<?= e($base) ?>/js/estudiantes.js"></script>

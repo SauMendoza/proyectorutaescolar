@@ -1,6 +1,6 @@
 <?php
 // Auxiliares (solo administrador). Datos de AuxiliarController::listado():
-// $auxiliares, $rutas, $formulario (errores y lo que se escribió), $mensajeExito
+// $auxiliares, $rutas, $formulario (errores y lo que se escribió), $mensajeExito, $errorContrasena
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
 
 if (!function_exists('e')) {
@@ -89,6 +89,7 @@ $textoIngreso = function (?string $fechaHora): string {
                                 <?php endif; ?>
                             </span>
                         </p>
+                        <button type="button" class="boton boton-borde boton-chico" data-abrir-ventana="auxiliar-<?= (int) $auxiliar['id_usuario'] ?>">Ver información</button>
                     </article>
                 <?php endforeach; ?>
 
@@ -186,7 +187,66 @@ $textoIngreso = function (?string $fechaHora): string {
                 </div>
             </form>
         </div>
+
+        <?php if ($errorContrasena && !in_array($errorContrasena['id'], array_map('intval', array_column($auxiliares, 'id_usuario')), true)): ?>
+            <p class="aviso aviso-error" role="alert"><?= e($errorContrasena['error']) ?></p>
+        <?php endif; ?>
     </main>
+
+    <!-- Información de cada auxiliar y cambio de contraseña (la actual nunca se muestra) -->
+    <?php foreach ($auxiliares as $auxiliar): ?>
+        <?php
+        $id = (int) $auxiliar['id_usuario'];
+        $errorAqui = $errorContrasena && $errorContrasena['id'] === $id ? $errorContrasena['error'] : null;
+        ?>
+        <dialog class="ventana" id="auxiliar-<?= $id ?>" aria-labelledby="titulo-auxiliar-<?= $id ?>" <?= $errorAqui ? 'data-abrir' : '' ?>>
+            <div class="ventana-cabecera">
+                <div>
+                    <p class="etiqueta">Auxiliar</p>
+                    <h2 id="titulo-auxiliar-<?= $id ?>"><?= e($auxiliar['nombre'] . ' ' . $auxiliar['apellido']) ?></h2>
+                </div>
+                <button type="button" class="cerrar-ventana" data-cerrar-ventana aria-label="Cerrar">×</button>
+            </div>
+
+            <dl class="datos">
+                <div><dt>Documento</dt><dd class="mono"><?= e($auxiliar['dni'] ?: 'Sin registrar') ?></dd></div>
+                <div><dt>Correo</dt><dd><?= e($auxiliar['correo']) ?></dd></div>
+                <div><dt>Celular</dt><dd class="mono"><?= e($auxiliar['telefono'] ?: 'Sin registrar') ?></dd></div>
+                <div><dt>Ruta</dt><dd><?= e($auxiliar['ruta'] ?? 'Sin ruta') ?></dd></div>
+                <div><dt>Fecha de ingreso</dt><dd class="mono"><?= $auxiliar['fecha_ingreso'] ? e(date('d/m/Y', strtotime($auxiliar['fecha_ingreso']))) : 'Sin registrar' ?></dd></div>
+                <div><dt>Último acceso</dt><dd><?= e($textoIngreso($auxiliar['ultimo_ingreso'])) ?></dd></div>
+                <div><dt>Contraseña</dt><dd><?= $auxiliar['cambiar_contrasena'] ? 'Temporal, debe cambiarla al entrar' : 'Propia' ?></dd></div>
+            </dl>
+
+            <form action="<?= e($base) ?>/auxiliares/contrasena" method="POST" autocomplete="off">
+                <?= \App\Core\Csrf::field() ?>
+                <input type="hidden" name="id_usuario" value="<?= $id ?>">
+                <p class="etiqueta etiqueta-seccion">Cambiar contraseña</p>
+
+                <?php if ($errorAqui): ?>
+                    <p class="aviso aviso-error" role="alert"><?= e($errorAqui) ?></p>
+                <?php endif; ?>
+
+                <div class="campos">
+                    <label>Contraseña nueva
+                        <input type="password" name="contrasena" required minlength="8" maxlength="72" autocomplete="new-password" class="mono">
+                    </label>
+                    <label>Repítela
+                        <input type="password" name="repetir" required minlength="8" maxlength="72" autocomplete="new-password" class="mono">
+                    </label>
+                    <label class="campo-completo casilla">
+                        <input type="checkbox" name="cambiar_contrasena" checked>
+                        <span>Pedirle que ponga una propia al entrar</span>
+                    </label>
+                </div>
+
+                <div class="ventana-acciones">
+                    <button type="button" class="boton boton-borde" data-cerrar-ventana>Cerrar</button>
+                    <button type="submit" class="boton boton-amarillo">Cambiar contraseña</button>
+                </div>
+            </form>
+        </dialog>
+    <?php endforeach; ?>
 
     <script src="<?= e($base) ?>/js/auxiliares.js"></script>
 </body>

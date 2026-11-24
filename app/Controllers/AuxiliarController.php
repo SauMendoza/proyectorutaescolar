@@ -24,7 +24,8 @@ class AuxiliarController
 
         $formulario = $_SESSION['nuevo_auxiliar'] ?? ['errores' => [], 'datos' => []];
         $mensajeExito = $_SESSION['auxiliar_guardado'] ?? null;
-        unset($_SESSION['nuevo_auxiliar'], $_SESSION['auxiliar_guardado']);
+        $errorContrasena = $_SESSION['contrasena_auxiliar'] ?? null;
+        unset($_SESSION['nuevo_auxiliar'], $_SESSION['auxiliar_guardado'], $_SESSION['contrasena_auxiliar']);
 
         require __DIR__ . '/../Views/auxiliar/registro.php';
     }
@@ -111,6 +112,34 @@ class AuxiliarController
                 . ' creada. Su usuario es ' . $datos['correo'] . '.';
         }
 
+        header('Location: ' . \App\Core\Url::base() . '/auxiliares');
+        exit;
+    }
+
+    //Pone una contraseña nueva a un auxiliar. La actual no se puede ver: está cifrada.
+    public function cambiarContrasena()
+    {
+        Auth::requireRole('administrador');
+
+        $id = (int) filter_var($_POST['id_usuario'] ?? '', FILTER_VALIDATE_INT);
+        //Se quitan los espacios de los extremos, igual que al iniciar sesión
+        $nueva = is_string($_POST['contrasena'] ?? null) ? trim($_POST['contrasena']) : '';
+        $repetir = is_string($_POST['repetir'] ?? null) ? trim($_POST['repetir']) : '';
+
+        $error = null;
+        if (mb_strlen($nueva) < 8 || strlen($nueva) > 72) {
+            $error = 'La contraseña debe tener entre 8 y 72 caracteres.';
+        } elseif ($nueva !== $repetir) {
+            $error = 'Las dos contraseñas no coinciden.';
+        } elseif (!(new Auxiliar($this->conectar()))->cambiarContrasena($id, $nueva, isset($_POST['cambiar_contrasena']))) {
+            $error = 'No se encontró el auxiliar.';
+        }
+
+        if ($error) {
+            $_SESSION['contrasena_auxiliar'] = ['id' => $id, 'error' => $error];
+        } else {
+            $_SESSION['auxiliar_guardado'] = 'Contraseña cambiada.';
+        }
         header('Location: ' . \App\Core\Url::base() . '/auxiliares');
         exit;
     }

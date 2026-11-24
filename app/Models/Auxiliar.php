@@ -47,6 +47,24 @@ class Auxiliar
         return (bool) $consulta->fetchColumn();
     }
 
+    // Pone una contraseña nueva (cifrada) a un auxiliar. La actual no se lee ni se muestra.
+    // El JOIN con auxiliar impide cambiar la de un administrador. Devuelve false si no es un auxiliar.
+    public function cambiarContrasena(int $idUsuario, string $contrasena, bool $pedirCambio): bool
+    {
+        $consulta = $this->conexion->prepare(
+            'UPDATE usuario u
+             INNER JOIN auxiliar a ON a.fk_id_usuario = u.id_usuario
+             SET u.contrasena = :hash, u.cambiar_contrasena = :cambiar
+             WHERE u.id_usuario = :id'
+        );
+        $consulta->execute([
+            ':hash' => password_hash($contrasena, PASSWORD_DEFAULT),
+            ':cambiar' => $pedirCambio ? 1 : 0,
+            ':id' => $idUsuario,
+        ]);
+        return $consulta->rowCount() > 0;
+    }
+
     // Crea la cuenta con el procedimiento sp_crear_auxiliar: en una transacción guarda el usuario
     // y luego su fila en auxiliar. Si algo falla, no queda nada guardado (y PHP recibe el error).
     // La contraseña se cifra aquí antes de enviarla.

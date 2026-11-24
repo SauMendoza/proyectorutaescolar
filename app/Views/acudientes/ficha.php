@@ -51,6 +51,7 @@ $idsParentesco = array_column($parentescos, 'id_parentesco', 'nombre');
             <?php if ($acudiente['telefono']): ?>
                 <a class="boton boton-amarillo" href="tel:<?= e($acudiente['telefono']) ?>">Llamar <?= e($acudiente['telefono']) ?></a>
             <?php endif; ?>
+            <button type="button" class="boton boton-borde" data-abrir-ventana="ventana-editar">Editar</button>
         </header>
 
         <div class="ficha-acudiente">
@@ -136,5 +137,55 @@ $idsParentesco = array_column($parentescos, 'id_parentesco', 'nombre');
             </section>
         </div>
     </main>
+
+    <?php
+    $editado = $edicion['datos'] ?? [
+        'nombre' => $acudiente['nombre_acu'], 'apellido' => $acudiente['apellido_acu'], 'telefono' => $acudiente['telefono'],
+    ];
+    ?>
+    <dialog class="ventana" id="ventana-editar" aria-labelledby="titulo-editar" <?= $edicion ? 'data-abrir' : '' ?>>
+        <form action="<?= e($base) ?>/acudientes/editar" method="POST">
+            <?= \App\Core\Csrf::field() ?>
+            <input type="hidden" name="documento" value="<?= e($acudiente['num_doc_acu']) ?>">
+            <div class="ventana-cabecera">
+                <div>
+                    <p class="etiqueta">CC <?= e($acudiente['num_doc_acu']) ?></p>
+                    <h2 id="titulo-editar">Editar acudiente</h2>
+                </div>
+                <button type="button" class="cerrar-ventana" data-cerrar-ventana aria-label="Cerrar">×</button>
+            </div>
+
+            <?php if ($edicion): ?>
+                <div class="aviso aviso-error" role="alert">
+                    Revisa estos datos:
+                    <ul>
+                        <?php foreach ($edicion['errores'] as $error): ?>
+                            <li><?= e($error) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+
+            <div class="campos">
+                <label>Nombre
+                    <input type="text" name="nombre" value="<?= e($editado['nombre']) ?>" required maxlength="100" autocomplete="off">
+                </label>
+                <label>Apellido
+                    <input type="text" name="apellido" value="<?= e($editado['apellido']) ?>" required maxlength="100" autocomplete="off">
+                </label>
+                <label class="campo-completo">Celular de emergencia (opcional)
+                    <input type="tel" name="telefono" value="<?= e($editado['telefono']) ?>" maxlength="20" placeholder="301 100 0001" autocomplete="off">
+                </label>
+            </div>
+            <p class="nota">Sus estudiantes a cargo no cambian. El parentesco se cambia desde la ficha del estudiante.</p>
+
+            <div class="ventana-acciones">
+                <button type="button" class="boton boton-borde" data-cerrar-ventana>Cancelar</button>
+                <button type="submit" class="boton boton-amarillo">Guardar cambios</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="<?= e($base) ?>/js/acudientes.js"></script>
 </body>
 </html>

@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\ExcelAsistencia;
 use App\Database\Connection;
 use App\Models\Asistencia;
 use App\Models\Estudiante;
@@ -17,6 +18,7 @@ use PDOException;
 // Cada registro queda en una jornada (ruta + recorrido + fecha + usuario que registra).
 class AsistenciaController
 {
+    private const CERRADO = 'El recorrido ya está cerrado. Para corregir algo, pide a administración.';
     private const TIPOS = ['IDA' => 'Ida', 'REGRESO' => 'Regreso'];
 
     // ----- Auxiliar -----
@@ -40,7 +42,9 @@ class AsistenciaController
             $numeroParada[$parada['id_parada']] = $indice + 1;
         }
 
-        $estudiantes = $ruta ? (new Asistencia($conexion))->obtenerDeRuta($idRuta, date('Y-m-d')) : [];
+        $modelo = new Asistencia($conexion);
+        $estudiantes = $ruta ? $modelo->obtenerDeRuta($idRuta, date('Y-m-d')) : [];
+        $horaCierre = $ruta ? $modelo->horaCierre($idRuta, $tipo, date('Y-m-d')) : null;
 
         //En el regreso el recorrido va del colegio a la casa: las paradas se invierten
         if ($tipo === 'REGRESO') {
@@ -71,6 +75,8 @@ class AsistenciaController
 
         if (!$estudiante || (int) $estudiante['id_ruta'] !== $idRuta) {
             $this->avisar('error', 'Ese estudiante no pertenece a tu ruta.');
+        } elseif ($modelo->horaCierre($idRuta, $tipo, $hoy) !== null) {
+            $this->avisar('error', self::CERRADO);
         } else {
             $registro = $modelo->registrar($documento, (int) $_SESSION['usuario']['id_usuario'], $tipo, $hoy, date('H:i:s'));
 
@@ -93,6 +99,15 @@ class AsistenciaController
 
         [$documento, $tipo] = $this->leerDocumentoYTipo();
         $modelo = new Asistencia($this->conectar());
+
+        if ($modelo->horaCierre((int) ($_SESSION['usuario']['id_ruta'] ?? 0), $tipo, date('Y-m-d')) !== null) {
+            if ($this->pideJson()) {
+                $this->responderJson(['ok' => false, 'mensaje' => self::CERRADO], 409);
+            }
+            $this->avisar('error', self::CERRADO);
+            $this->ir('/asistencia/registro?tipo=' . $tipo);
+        }
+
         $modelo->deshacer($documento, $tipo, date('Y-m-d'), (int) $_SESSION['usuario']['id_usuario']);
 
         if ($this->pideJson()) {
@@ -100,6 +115,25 @@ class AsistenciaController
         }
 
         $this->avisar('exito', 'Registro deshecho.');
+        $this->ir('/asistencia/registro?tipo=' . $tipo);
+    }
+
+    //Cierra el recorrido de hoy: desde aquí el auxiliar ya no puede marcar, escanear ni deshacer
+    public function cerrar()
+    {
+        Auth::requireRole('auxiliar');
+
+        $tipo = is_string($_POST['tipo'] ?? null) && isset(self::TIPOS[$_POST['tipo']]) ? $_POST['tipo'] : null;
+        $idRuta = (int) ($_SESSION['usuario']['id_ruta'] ?? 0);
+        if ($tipo === null || $idRuta === 0) {
+            $this->avisar('error', 'No se pudo cerrar el recorrido.');
+            $this->ir('/asistencia/registro');
+        }
+
+        (new Asistencia($this->conectar()))->cerrarRecorrido(
+            $idRuta, (int) $_SESSION['usuario']['id_usuario'], $tipo, date('Y-m-d'), date('H:i:s')
+        );
+        $this->avisar('exito', 'Recorrido de ' . strtolower(self::TIPOS[$tipo]) . ' cerrado.');
         $this->ir('/asistencia/registro?tipo=' . $tipo);
     }
 
@@ -120,6 +154,10 @@ class AsistenciaController
 
         $conexion = $this->conectar();
         $modelo = new Asistencia($conexion);
+        if ($modelo->horaCierre($idRuta, $tipo, $hoy) !== null) {
+            $this->responderJson(['resultado' => 'cerrado', 'mensaje' => self::CERRADO] + $this->conteoDeHoy($modelo, $tipo));
+        }
+
         $ficha = preg_match('/^[A-Za-z0-9-]{1,20}$/', $documento) ? (new Estudiante($conexion))->obtenerFicha($documento) : null;
 
         if (!$ficha) {
@@ -204,12 +242,90 @@ class AsistenciaController
             'pendientes' => $pendientes,
         ] = $this->datosDelDia($rutasMostrar, $fecha, $modeloAsistencia);
 
+        //Recorridos cerrados por el auxiliar (la administración los puede reabrir)
+        $cierres = [];
+        foreach ($rutasMostrar as $ruta) {
+            foreach (self::TIPOS as $tipo => $nombreTipo) {
+                $hora = $modeloAsistencia->horaCierre((int) $ruta['id_ruta'], $tipo, $fecha);
+                if ($hora !== null) {
+                    $cierres[] = ['id_ruta' => (int) $ruta['id_ruta'], 'ruta' => $ruta['nombre'], 'tipo' => $tipo, 'nombre' => $nombreTipo, 'hora' => $hora];
+                }
+            }
+        }
+
         $soloLectura = false;
         $formulario = $_SESSION['asistencia_manual'] ?? null;
         $aviso = $_SESSION['asistencia_aviso'] ?? null;
         unset($_SESSION['asistencia_manual'], $_SESSION['asistencia_aviso']);
 
         require __DIR__ . '/../Views/asistencia/listado.php';
+    }
+
+    //Reabre un recorrido cerrado por error
+    public function reabrir()
+    {
+        Auth::requireRole('administrador');
+
+        $tipo = is_string($_POST['tipo'] ?? null) && isset(self::TIPOS[$_POST['tipo']]) ? $_POST['tipo'] : null;
+        $fecha = $this->fechaValida(is_string($_POST['fecha'] ?? null) ? $_POST['fecha'] : '');
+        $idRuta = (int) filter_var($_POST['id_ruta'] ?? '', FILTER_VALIDATE_INT);
+        $filtro = (int) filter_var($_POST['ruta'] ?? '', FILTER_VALIDATE_INT);
+
+        if ($tipo === null || $fecha === null || $idRuta === 0) {
+            $this->avisar('error', 'No se pudo reabrir el recorrido.');
+            $this->ir('/asistencias');
+        }
+
+        (new Asistencia($this->conectar()))->reabrirRecorrido($idRuta, $tipo, $fecha);
+        $this->avisar('exito', 'Recorrido de ' . strtolower(self::TIPOS[$tipo]) . ' reabierto.');
+        $this->ir('/asistencias?fecha=' . $fecha . '&ruta=' . $filtro);
+    }
+
+    //Excel de una fecha y una ruta (ruta=0 = todas)
+    public function exportar()
+    {
+        Auth::requireRole('administrador');
+
+        $fecha = $this->fechaValida(is_string($_GET['fecha'] ?? null) ? $_GET['fecha'] : '') ?? date('Y-m-d');
+        $idRuta = (int) filter_var($_GET['ruta'] ?? '', FILTER_VALIDATE_INT);
+        $conexion = $this->conectar();
+        $rutas = array_values(array_filter(
+            (new Ruta($conexion))->obtenerTodas(),
+            fn($ruta) => $idRuta === 0 || (int) $ruta['id_ruta'] === $idRuta
+        ));
+        $this->descargarExcel($conexion, $rutas, $fecha, $idRuta === 0);
+    }
+
+    //Excel del auxiliar: siempre y solo su ruta
+    public function exportarMiRuta()
+    {
+        Auth::requireRole('auxiliar');
+
+        $fecha = $this->fechaValida(is_string($_GET['fecha'] ?? null) ? $_GET['fecha'] : '') ?? date('Y-m-d');
+        $conexion = $this->conectar();
+        $idRuta = (int) ($_SESSION['usuario']['id_ruta'] ?? 0);
+        $rutas = $idRuta === 0 ? [] : (new Ruta($conexion))->obtenerTodas($idRuta);
+        $this->descargarExcel($conexion, $rutas, $fecha, false);
+    }
+
+    private function descargarExcel(PDO $conexion, array $rutas, string $fecha, bool $todas): void
+    {
+        if (!$rutas) {
+            http_response_code(404);
+            echo '404 - No hay una ruta para exportar.';
+            exit;
+        }
+
+        $datos = $this->datosDelDia($rutas, $fecha, new Asistencia($conexion));
+        $nombreRuta = $todas ? 'Todas las rutas' : $rutas[0]['nombre'];
+        $contenido = (new ExcelAsistencia())->crear($datos['estudiantes'], $nombreRuta, $datos['auxiliaresRuta'], $fecha, $todas);
+
+        $archivo = 'RutaSegura_Asistencias_' . $fecha . ($todas ? '_todas' : '_ruta' . (int) $rutas[0]['id_ruta']) . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $archivo . '"');
+        header('Content-Length: ' . strlen($contenido));
+        echo $contenido;
+        exit;
     }
 
     //Historial del auxiliar: la misma vista de Asistencias, solo de su ruta y sin poder cambiar nada
@@ -240,6 +356,7 @@ class AsistenciaController
             }
         }
 
+        $cierres = [];
         $soloLectura = true;
         $formulario = null;
         $aviso = null;

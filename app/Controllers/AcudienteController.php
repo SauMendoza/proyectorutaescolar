@@ -57,7 +57,11 @@ class AcudienteController
 
         $mensajeExito = $_SESSION['acudiente_guardado'] ?? null;
         $errorParentesco = $_SESSION['error_parentesco'] ?? null;
-        unset($_SESSION['acudiente_guardado'], $_SESSION['error_parentesco']);
+        $edicion = $_SESSION['editar_acudiente'] ?? null;
+        unset($_SESSION['acudiente_guardado'], $_SESSION['error_parentesco'], $_SESSION['editar_acudiente']);
+        if ($edicion && $edicion['datos']['documento'] !== $acudiente['num_doc_acu']) {
+            $edicion = null;
+        }
 
         require __DIR__ . '/../Views/acudientes/ficha.php';
     }
@@ -80,15 +84,7 @@ class AcudienteController
         } elseif ($modelo->buscarPorDocumento($datos['documento'])) {
             $errores['documento'] = 'Ya hay un acudiente con ese documento.';
         }
-        if ($datos['nombre'] === '' || mb_strlen($datos['nombre']) > 100) {
-            $errores['nombre'] = 'Escribe el nombre (máximo 100 caracteres).';
-        }
-        if ($datos['apellido'] === '' || mb_strlen($datos['apellido']) > 100) {
-            $errores['apellido'] = 'Escribe el apellido (máximo 100 caracteres).';
-        }
-        if ($datos['telefono'] !== '' && !preg_match('/^[0-9 +()-]{7,20}$/', $datos['telefono'])) {
-            $errores['telefono'] = 'Revisa el celular: solo números, entre 7 y 20.';
-        }
+        $errores += $this->validarDatos($datos);
 
         if ($errores) {
             $_SESSION['nuevo_acudiente'] = ['errores' => $errores, 'datos' => $datos];
@@ -101,6 +97,52 @@ class AcudienteController
         $_SESSION['acudiente_guardado'] = 'Acudiente registrado. Para asignarlo a un estudiante usa "Nuevo estudiante".';
         header('Location: ' . \App\Core\Url::base() . '/acudientes/ficha?documento=' . urlencode($datos['documento']));
         exit;
+    }
+
+    //Guarda los cambios de un acudiente (ventana "Editar" de la ficha). Sus estudiantes no cambian.
+    public function actualizar()
+    {
+        Auth::requireRole('administrador');
+
+        $datos = [];
+        foreach (['documento', 'nombre', 'apellido', 'telefono'] as $campo) {
+            $datos[$campo] = is_string($_POST[$campo] ?? null) ? trim($_POST[$campo]) : '';
+        }
+
+        $modelo = new Acudiente($this->conectar());
+        if ($datos['documento'] === '' || !$modelo->buscarPorDocumento($datos['documento'])) {
+            http_response_code(404);
+            echo '404 - No se encontró el acudiente.';
+            exit;
+        }
+
+        $errores = $this->validarDatos($datos);
+        if ($errores) {
+            $_SESSION['editar_acudiente'] = ['errores' => $errores, 'datos' => $datos];
+        } else {
+            $modelo->actualizar($datos['documento'], $datos['nombre'], $datos['apellido'], $datos['telefono'] ?: null);
+            $_SESSION['acudiente_guardado'] = 'Cambios guardados.';
+        }
+
+        header('Location: ' . \App\Core\Url::base() . '/acudientes/ficha?documento=' . urlencode($datos['documento']));
+        exit;
+    }
+
+    //Revisa nombre, apellido y celular (al crear y al editar)
+    private function validarDatos(array $datos): array
+    {
+        $errores = [];
+        if ($datos['nombre'] === '' || mb_strlen($datos['nombre']) > 100) {
+            $errores['nombre'] = 'Escribe el nombre (máximo 100 caracteres).';
+        }
+        if ($datos['apellido'] === '' || mb_strlen($datos['apellido']) > 100) {
+            $errores['apellido'] = 'Escribe el apellido (máximo 100 caracteres).';
+        }
+        if ($datos['telefono'] !== '' && !preg_match('/^[0-9 +()-]{7,20}$/', $datos['telefono'])) {
+            $errores['telefono'] = 'Revisa el celular: solo números, entre 7 y 20.';
+        }
+
+        return $errores;
     }
 
     //Agrega un parentesco al catálogo y vuelve a la ficha del acudiente

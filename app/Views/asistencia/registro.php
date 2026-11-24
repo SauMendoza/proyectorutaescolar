@@ -1,7 +1,7 @@
 <?php
 // Registro de asistencia del auxiliar (sirve en celular y en computador).
 // Datos de AsistenciaController::registro():
-// $ruta, $tipo, $estudiantes, $numeroParada, $aBordo, $campoHora, $aviso, $usuario
+// $ruta, $tipo, $estudiantes, $numeroParada, $aBordo, $campoHora, $horaCierre, $aviso, $usuario
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
 
 if (!function_exists('e')) {
@@ -22,6 +22,7 @@ $campoAdmin = $esIda ? 'es_admin_ida' : 'es_admin_regreso';
 $campoUsuario = $esIda ? 'id_usuario_ida' : 'id_usuario_regreso';
 $total = count($estudiantes);
 $porcentaje = $total > 0 ? round($aBordo * 100 / $total) : 0;
+$cerrado = $horaCierre !== null; // cerrado: solo se puede ver
 $faltan = array_filter($estudiantes, fn($e) => $e[$campoHora] === null);
 $textoRuta = $ruta ? 'Ruta ' . (int) $ruta['id_ruta'] . ' · ' . ($esIda ? 'Ida' : 'Regreso') : '';
 $iconoQr = '<svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg>';
@@ -53,7 +54,10 @@ $iconoQr = '<svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><rect x="3
                     <a href="<?= e($base) ?>/asistencia/registro?tipo=IDA" class="<?= $esIda ? 'activo' : '' ?>" <?= $esIda ? 'aria-current="page"' : '' ?>>Ida</a>
                     <a href="<?= e($base) ?>/asistencia/registro?tipo=REGRESO" class="<?= $esIda ? '' : 'activo' ?>" <?= $esIda ? '' : 'aria-current="page"' ?>>Regreso</a>
                 </nav>
-                <?php if ($ruta && $total > 0): ?>
+                <?php if ($ruta): ?>
+                    <a class="boton boton-borde" href="<?= e($base) ?>/asistencia/exportar">Exportar a Excel</a>
+                <?php endif; ?>
+                <?php if ($ruta && $total > 0 && !$cerrado): ?>
                     <button type="button" class="boton boton-borde solo-computador" data-abrir-escaner><?= $iconoQr ?> Escanear con cámara</button>
                 <?php endif; ?>
             </div>
@@ -66,6 +70,10 @@ $iconoQr = '<svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><rect x="3
         <?php if (!$ruta): ?>
             <p class="panel texto-suave">No tienes una ruta asignada. Pide a la administración que te asigne una.</p>
         <?php else: ?>
+            <?php if ($cerrado): ?>
+                <p class="aviso aviso-cerrado" role="status">Recorrido de <?= $esIda ? 'ida' : 'regreso' ?> cerrado a las <?= e($horaCierre) ?>. Para corregir algo, pide a administración.</p>
+            <?php endif; ?>
+
             <section class="barra-progreso panel">
                 <strong><?= $aBordo ?> de <?= $total ?> <?= $esIda ? 'a bordo' : 'bajaron' ?></strong>
                 <span class="progreso" role="progressbar" aria-valuemin="0" aria-valuemax="<?= $total ?>" aria-valuenow="<?= $aBordo ?>" aria-label="Avance del recorrido">
@@ -109,7 +117,12 @@ $iconoQr = '<svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><rect x="3
                             <?php endif; ?>
                         </span>
 
-                        <?php if ($hora === null): ?>
+                        <?php if ($hora === null && $cerrado): ?>
+                            <span class="boton-marcado boton-ajeno" title="El recorrido está cerrado">
+                                <span class="texto-boton">No <?= $esIda ? 'subió' : 'bajó' ?></span>
+                                <span class="circulo circulo-vacio" aria-label="Sin registro"></span>
+                            </span>
+                        <?php elseif ($hora === null): ?>
                             <form action="<?= e($base) ?>/asistencia/marcar" method="POST">
                                 <?= \App\Core\Csrf::field() ?>
                                 <input type="hidden" name="documento" value="<?= e($estudiante['documento']) ?>">
@@ -119,7 +132,7 @@ $iconoQr = '<svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><rect x="3
                                     <span class="circulo" aria-hidden="true"></span>
                                 </button>
                             </form>
-                        <?php elseif ($registradoPorMi): ?>
+                        <?php elseif ($registradoPorMi && !$cerrado): ?>
                             <form action="<?= e($base) ?>/asistencia/deshacer" method="POST"
                                   data-confirmar="¿Deshacer el registro de <?= e($estudiante['estudiante']) ?>?">
                                 <?= \App\Core\Csrf::field() ?>
@@ -131,7 +144,7 @@ $iconoQr = '<svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><rect x="3
                                 </button>
                             </form>
                         <?php else: ?>
-                            <span class="boton-marcado boton-ajeno" title="Lo registró <?= e($estudiante[$campoAdmin] ? 'la administración' : 'otro auxiliar') ?>">
+                            <span class="boton-marcado boton-ajeno" title="<?= $registradoPorMi ? 'El recorrido está cerrado' : 'Lo registró ' . ($estudiante[$campoAdmin] ? 'la administración' : 'otro auxiliar') ?>">
                                 <span class="texto-boton"><?= $estudiante[$campoAdmin] ? 'Manual' : $verbo ?> <?= e(substr($hora, 0, 5)) ?></span>
                                 <span class="circulo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 12.5 4 4 8-9"/></svg></span>
                             </span>
@@ -144,10 +157,10 @@ $iconoQr = '<svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><rect x="3
             <footer class="panel pie-registro">
                 <svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
                 <span>Solo tu ruta y solo hoy. Para corregir días anteriores, pide a administración.</span>
-                <button type="button" class="boton boton-marfil" data-abrir-ventana="ventana-resumen">Cerrar recorrido</button>
+                <button type="button" class="boton boton-marfil" data-abrir-ventana="ventana-resumen"><?= $cerrado ? 'Ver resumen' : 'Cerrar recorrido' ?></button>
             </footer>
 
-            <?php if ($total > 0): ?>
+            <?php if ($total > 0 && !$cerrado): ?>
                 <!-- En el celular el escáner queda siempre a mano, abajo -->
                 <button type="button" class="boton boton-amarillo boton-escanear solo-celular" data-abrir-escaner><?= $iconoQr ?> Escanear QR</button>
             <?php endif; ?>
@@ -194,13 +207,25 @@ $iconoQr = '<svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><rect x="3
                 <p class="aviso aviso-exito">Todos los estudiantes quedaron registrados.</p>
             <?php endif; ?>
 
-            <div class="ventana-acciones">
-                <button type="button" class="boton boton-amarillo" data-cerrar-ventana>Listo</button>
-            </div>
+            <?php if ($cerrado): ?>
+                <div class="ventana-acciones">
+                    <button type="button" class="boton boton-amarillo" data-cerrar-ventana>Listo</button>
+                </div>
+            <?php else: ?>
+                <form action="<?= e($base) ?>/asistencia/cerrar" method="POST">
+                    <?= \App\Core\Csrf::field() ?>
+                    <input type="hidden" name="tipo" value="<?= e($tipo) ?>">
+                    <p class="nota">Al cerrar ya no podrás marcar, escanear ni deshacer este recorrido hoy.</p>
+                    <div class="ventana-acciones">
+                        <button type="button" class="boton boton-borde" data-cerrar-ventana>Seguir marcando</button>
+                        <button type="submit" class="boton boton-amarillo">Cerrar recorrido</button>
+                    </div>
+                </form>
+            <?php endif; ?>
         </dialog>
     <?php endif; ?>
 
-    <?php if ($ruta && $total > 0): ?>
+    <?php if ($ruta && $total > 0 && !$cerrado): ?>
         <!-- Escáner del carné: lee el QR con la cámara y muestra la ficha del estudiante -->
         <dialog class="escaner" id="escaner" aria-labelledby="titulo-escaner"
                 data-escanear="<?= e($base) ?>/asistencia/escanear" data-deshacer="<?= e($base) ?>/asistencia/deshacer"

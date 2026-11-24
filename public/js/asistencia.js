@@ -252,7 +252,7 @@ document.querySelectorAll('dialog.ventana').forEach(function (ventana) {
 
         enviar(escaner.dataset.escanear, { documento: codigo, tipo: escaner.dataset.tipo })
             .then(function (datos) {
-                if (datos.resultado === 'registrado') hubCambios = true;
+                if (datos.resultado === 'registrado' || datos.resultado === 'cerrado') hubCambios = true;
                 actualizarContador(datos);
                 mostrarHoja(datos);
             })
@@ -341,6 +341,7 @@ document.querySelectorAll('dialog.ventana').forEach(function (ventana) {
             ya_registrado: { tema: 'hoja-amarilla', insignia: 'reloj', estado: palabras.yaHizo + ' · ' + datos.hora, aviso: 'No se duplicó el registro.' },
             otra_ruta: { tema: 'hoja-roja', insignia: 'alerta', estado: 'No es de tu ruta', aviso: 'No se registró ' + palabras.accion + '. Avisa a coordinación.' },
             desconocido: { tema: 'hoja-roja', insignia: 'alerta', estado: 'Carné no reconocido', aviso: 'Ese código no corresponde a ningún estudiante. Búscalo por nombre.' },
+            cerrado: { tema: 'hoja-roja', insignia: 'alerta', estado: 'Recorrido cerrado', aviso: datos.mensaje },
             error: { tema: 'hoja-roja', insignia: 'alerta', estado: 'No se pudo registrar', aviso: datos.mensaje || 'Intenta de nuevo.' },
         };
         const caso = Object.assign({}, casos[datos.resultado] || casos.error);

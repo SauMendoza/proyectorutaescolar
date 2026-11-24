@@ -572,3 +572,23 @@ dialog.escaner::backdrop { background: rgba(4, 12, 8, 0.75); }
 
     dialog.escaner { width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
 }
+
+/* ----- Recorrido cerrado ----- */
+.aviso-cerrado {
+    color: var(--marfil);
+    background: rgba(31, 58, 140, 0.3);
+    border: 1px solid rgba(157, 180, 255, 0.35);
+}
+
+.boton-ajeno .circulo-vacio { background: transparent; }
+
+.cierres { display: grid; gap: 8px; margin-bottom: 16px; }
+
+.cierres form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    padding: 10px 16px;
+}

@@ -56,6 +56,27 @@ class Acudiente
         ]);
     }
 
+    // Cambia los datos de un acudiente. El documento no se cambia: lo usan sus vínculos con estudiantes.
+    public function actualizar(string $documento, string $nombre, string $apellido, ?string $telefono): void
+    {
+        $sql = 'UPDATE acudiente SET nombre_acu = :nombre, apellido_acu = :apellido, telefono = :telefono
+                WHERE num_doc_acu = :documento';
+
+        $this->conexion->prepare($sql)->execute([
+            ':nombre' => $nombre,
+            ':apellido' => $apellido,
+            ':telefono' => $telefono,
+            ':documento' => $documento,
+        ]);
+    }
+
+    // Quita los vínculos de un estudiante para volver a asignarlos (siempre dentro de una transacción).
+    public function desvincularDeEstudiante(string $documentoEstudiante): void
+    {
+        $this->conexion->prepare('DELETE FROM acudiente_estudiante WHERE fk_num_doc_estu = :documento')
+            ->execute([':documento' => $documentoEstudiante]);
+    }
+
     // Une el acudiente con el estudiante en acudiente_estudiante.
     // $tipo es PRINCIPAL o SUPLENTE.
     public function asignar(string $documentoAcudiente, string $documentoEstudiante, int $idParentesco, string $tipo): void
@@ -78,7 +99,7 @@ class Acudiente
     public function obtenerDeEstudiante(string $documentoEstudiante): array
     {
         $sql = 'SELECT a.num_doc_acu, a.nombre_acu, a.apellido_acu, a.telefono,
-                       ae.tipo_acudiente, pa.nombre AS parentesco,
+                       ae.tipo_acudiente, ae.fk_id_parentesco, pa.nombre AS parentesco,
                        (SELECT COUNT(*) FROM acudiente_estudiante x
                         WHERE x.fk_num_doc_acu = a.num_doc_acu
                           AND x.fk_num_doc_estu <> :estudiante1) AS otros

@@ -149,6 +149,59 @@ class Estudiante
         ]);
     }
 
+    //Cambia los datos de un estudiante. El documento no se cambia: es la llave de sus
+    //acudientes y asistencias, y es lo que lleva el QR de su carné.
+    public function actualizar(string $documento, array $datos): void
+    {
+        $sql = 'UPDATE estudiante
+                SET tipo_doc_estu = :tipo, nombre = :nombre, segundo_nombre = :segundo_nombre,
+                    apellido = :apellido, segundo_apellido = :segundo_apellido,
+                    fecha_nacimiento = :fecha, edad = :edad, fk_id_curso = :curso, fk_id_parada = :parada
+                WHERE num_doc_estu = :documento';
+
+        $this->conexion->prepare($sql)->execute([
+            ':tipo' => $datos['tipo_documento'],
+            ':nombre' => $datos['nombre'],
+            ':segundo_nombre' => $datos['segundo_nombre'] ?: null,
+            ':apellido' => $datos['apellido'],
+            ':segundo_apellido' => $datos['segundo_apellido'] ?: null,
+            ':fecha' => $datos['fecha_nacimiento'],
+            ':edad' => $datos['edad'],
+            ':curso' => $datos['curso'],
+            ':parada' => $datos['parada'],
+            ':documento' => $documento,
+        ]);
+    }
+
+    //Cuántas asistencias tiene (se avisa antes de borrarlo)
+    public function contarAsistencias(string $documento): int
+    {
+        $consulta = $this->conexion->prepare('SELECT COUNT(*) FROM asistencia WHERE fk_num_doc_estu = :documento');
+        $consulta->execute([':documento' => $documento]);
+        return (int) $consulta->fetchColumn();
+    }
+
+    //Borra un estudiante en una transacción: primero sus asistencias y sus vínculos con
+    //acudientes (así no quedan filas sueltas) y después el estudiante.
+    //Los acudientes NO se borran: pueden representar a otros estudiantes.
+    public function eliminar(string $documento): void
+    {
+        $this->conexion->beginTransaction();
+        try {
+            foreach ([
+                'DELETE FROM asistencia WHERE fk_num_doc_estu = :documento',
+                'DELETE FROM acudiente_estudiante WHERE fk_num_doc_estu = :documento',
+                'DELETE FROM estudiante WHERE num_doc_estu = :documento',
+            ] as $sql) {
+                $this->conexion->prepare($sql)->execute([':documento' => $documento]);
+            }
+            $this->conexion->commit();
+        } catch (\Throwable $e) {
+            $this->conexion->rollBack();
+            throw $e;
+        }
+    }
+
     //Datos completos de un estudiante para su ficha: curso, parada, ruta y conductor
     public function obtenerFicha(string $documento): ?array
     {

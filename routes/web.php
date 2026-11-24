@@ -37,6 +37,17 @@
         'ficha'
     ]);
 
+    // Editar y borrar un estudiante (solo administrador)
+    $router->post('/estudiantes/editar', [
+        EstudianteController::class,
+        'actualizar'
+    ]);
+
+    $router->post('/estudiantes/eliminar', [
+        EstudianteController::class,
+        'eliminar'
+    ]);
+
     // Busca un acudiente por documento y responde en JSON
     $router->get('/estudiantes/acudiente', [
         EstudianteController::class,
@@ -82,6 +93,12 @@
         'guardar'
     ]);
 
+    // El administrador pone una contraseña nueva a un auxiliar
+    $router->post('/auxiliares/contrasena', [
+        AuxiliarController::class,
+        'cambiarContrasena'
+    ]);
+
     // Responde en JSON si un correo está libre
     $router->get('/auxiliares/correo', [
         AuxiliarController::class,
@@ -102,6 +119,11 @@
     $router->post('/acudientes/nuevo', [
         AcudienteController::class,
         'guardar'
+    ]);
+
+    $router->post('/acudientes/editar', [
+        AcudienteController::class,
+        'actualizar'
     ]);
 
     $router->post('/acudientes/parentesco', [
@@ -145,6 +167,29 @@
     $router->post('/asistencia/deshacer', [
         AsistenciaController::class,
         'deshacer'
+    ]);
+
+    // El auxiliar cierra el recorrido de hoy: ya no se puede marcar ni deshacer
+    $router->post('/asistencia/cerrar', [
+        AsistenciaController::class,
+        'cerrar'
+    ]);
+
+    // El administrador reabre un recorrido cerrado por error
+    $router->post('/asistencias/reabrir', [
+        AsistenciaController::class,
+        'reabrir'
+    ]);
+
+    // Excel de asistencias: el administrador elige ruta; el auxiliar solo la suya
+    $router->get('/asistencias/exportar', [
+        AsistenciaController::class,
+        'exportar'
+    ]);
+
+    $router->get('/asistencia/exportar', [
+        AsistenciaController::class,
+        'exportarMiRuta'
     ]);
 
     // Escáner QR del carné: registra y responde en JSON

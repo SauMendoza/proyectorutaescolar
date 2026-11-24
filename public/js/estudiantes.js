@@ -393,3 +393,16 @@ function normalizar(texto) {
         document.body.classList.remove('imprimiendo-carne');
     });
 })();
+// ---------------------------------------------------------------------------
+// Ventanas: data-abrir-ventana="id" la abre; data-cerrar-ventana la cierra.
+// Un botón puede hacer las dos cosas. Si trae data-abrir (hubo errores), se abre sola.
+// ---------------------------------------------------------------------------
+document.querySelectorAll('[data-cerrar-ventana]').forEach(function (boton) {
+    boton.addEventListener('click', function () { boton.closest('dialog').close(); });
+});
+document.querySelectorAll('[data-abrir-ventana]').forEach(function (boton) {
+    boton.addEventListener('click', function () {
+        document.getElementById(boton.dataset.abrirVentana).showModal();
+    });
+});
+document.querySelectorAll('dialog.ventana[data-abrir]').forEach(function (ventana) { ventana.showModal(); });

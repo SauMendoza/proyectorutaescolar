@@ -53,7 +53,12 @@ $manual = $formulario['datos'] ?? ['documento' => '', 'tipo' => 'IDA', 'hora' =>
                 <?php endif; ?>
             </div>
             <?php if (!$soloLectura): ?>
-                <button type="button" class="boton boton-amarillo" data-abrir-ventana="ventana-manual" <?= $total === 0 ? 'disabled' : '' ?>>+ Registro manual</button>
+                <div class="cabecera-acciones">
+                    <a class="boton boton-borde" href="<?= e($base) ?>/asistencias/exportar?fecha=<?= e($fecha) ?>&amp;ruta=<?= (int) $idRuta ?>">Exportar a Excel</a>
+                    <button type="button" class="boton boton-amarillo" data-abrir-ventana="ventana-manual" <?= $total === 0 ? 'disabled' : '' ?>>+ Registro manual</button>
+                </div>
+            <?php elseif ($rutas): ?>
+                <a class="boton boton-borde" href="<?= e($base) ?>/asistencia/exportar?fecha=<?= e($fecha) ?>">Exportar a Excel</a>
             <?php endif; ?>
         </header>
 
@@ -111,6 +116,22 @@ $manual = $formulario['datos'] ?? ['documento' => '', 'tipo' => 'IDA', 'hora' =>
                 <?php endif; ?>
             </article>
         </section>
+
+        <?php if ($cierres): ?>
+            <section class="cierres" aria-label="Recorridos cerrados">
+                <?php foreach ($cierres as $cierre): ?>
+                    <form class="panel" action="<?= e($base) ?>/asistencias/reabrir" method="POST">
+                        <?= \App\Core\Csrf::field() ?>
+                        <input type="hidden" name="id_ruta" value="<?= $cierre['id_ruta'] ?>">
+                        <input type="hidden" name="tipo" value="<?= e($cierre['tipo']) ?>">
+                        <input type="hidden" name="fecha" value="<?= e($fecha) ?>">
+                        <input type="hidden" name="ruta" value="<?= (int) $idRuta ?>">
+                        <span><?= e($cierre['ruta']) ?> · <?= e($cierre['nombre']) ?> cerrada a las <strong><?= e($cierre['hora']) ?></strong></span>
+                        <button type="submit" class="boton boton-borde boton-chico">Reabrir</button>
+                    </form>
+                <?php endforeach; ?>
+            </section>
+        <?php endif; ?>
 
         <section class="panel-tabla">
             <?php if ($total === 0): ?>

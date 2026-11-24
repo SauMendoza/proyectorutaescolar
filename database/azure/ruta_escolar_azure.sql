@@ -191,6 +191,7 @@ CREATE TABLE IF NOT EXISTS jornada (
     fk_id_usuario INT NOT NULL,
     tipo_recorrido ENUM('IDA','REGRESO') NOT NULL,
     fecha DATE NOT NULL DEFAULT (CURRENT_DATE),
+    hora_cierre TIME NULL, -- el auxiliar cerró el recorrido; NULL = sigue abierto
 
     CONSTRAINT fk_jornada_ruta
         FOREIGN KEY (fk_id_ruta)
@@ -252,6 +253,9 @@ CALL sp_agregar_columna('usuario', 'cambiar_contrasena', 'TINYINT(1) NOT NULL DE
 -- Estudiantes de una base vieja: quedan sin fecha (NULL) hasta que se edite su ficha.
 CALL sp_agregar_columna('estudiante', 'fecha_nacimiento', 'DATE NULL AFTER segundo_apellido');
 CALL sp_agregar_columna('estudiante', 'edad', 'INT NULL AFTER fecha_nacimiento');
+
+-- Hora en que el auxiliar cerró el recorrido (NULL = sigue abierto).
+CALL sp_agregar_columna('jornada', 'hora_cierre', 'TIME NULL AFTER fecha');
 
 DROP PROCEDURE sp_agregar_columna;
 

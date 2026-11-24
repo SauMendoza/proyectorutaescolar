@@ -171,6 +171,7 @@ CREATE TABLE jornada (
     fk_id_usuario INT NOT NULL,
     tipo_recorrido ENUM('IDA','REGRESO') NOT NULL,
     fecha DATE NOT NULL DEFAULT (CURRENT_DATE),
+    hora_cierre TIME NULL, -- el auxiliar cerró el recorrido; NULL = sigue abierto
 
     CONSTRAINT fk_jornada_ruta
         FOREIGN KEY (fk_id_ruta)

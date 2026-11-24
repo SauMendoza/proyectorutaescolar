@@ -139,6 +139,48 @@ class Asistencia
         return $fila;
     }
 
+    // Hora en que se cerró un recorrido (HH:MM) o null si sigue abierto.
+    public function horaCierre(int $idRuta, string $tipo, string $fecha): ?string
+    {
+        $consulta = $this->conexion->prepare(
+            'SELECT MAX(hora_cierre) FROM jornada
+             WHERE fk_id_ruta = :ruta AND tipo_recorrido = :tipo AND fecha = :fecha'
+        );
+        $consulta->execute([':ruta' => $idRuta, ':tipo' => $tipo, ':fecha' => $fecha]);
+        $hora = $consulta->fetchColumn();
+        return $hora ? substr($hora, 0, 5) : null;
+    }
+
+    // Cierra el recorrido de la ruta en esa fecha. Si nadie subió todavía no hay jornada: se crea.
+    public function cerrarRecorrido(int $idRuta, int $idUsuario, string $tipo, string $fecha, string $hora): void
+    {
+        if ($this->horaCierre($idRuta, $tipo, $fecha) !== null) {
+            return;
+        }
+
+        $consulta = $this->conexion->prepare(
+            'UPDATE jornada SET hora_cierre = :hora
+             WHERE fk_id_ruta = :ruta AND tipo_recorrido = :tipo AND fecha = :fecha'
+        );
+        $consulta->execute([':hora' => $hora, ':ruta' => $idRuta, ':tipo' => $tipo, ':fecha' => $fecha]);
+
+        if ($consulta->rowCount() === 0) {
+            $this->conexion->prepare(
+                'INSERT INTO jornada (fk_id_ruta, fk_id_usuario, tipo_recorrido, fecha, hora_cierre)
+                 VALUES (:ruta, :usuario, :tipo, :fecha, :hora)'
+            )->execute([':ruta' => $idRuta, ':usuario' => $idUsuario, ':tipo' => $tipo, ':fecha' => $fecha, ':hora' => $hora]);
+        }
+    }
+
+    // Reabre un recorrido (administración).
+    public function reabrirRecorrido(int $idRuta, string $tipo, string $fecha): void
+    {
+        $this->conexion->prepare(
+            'UPDATE jornada SET hora_cierre = NULL
+             WHERE fk_id_ruta = :ruta AND tipo_recorrido = :tipo AND fecha = :fecha'
+        )->execute([':ruta' => $idRuta, ':tipo' => $tipo, ':fecha' => $fecha]);
+    }
+
     // Borra un registro hecho por error. Solo lo puede borrar quien lo hizo y solo el mismo día.
     public function deshacer(string $documento, string $tipo, string $fecha, int $idUsuario): void
     {
